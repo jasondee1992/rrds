@@ -5,3 +5,228 @@ generator client {
 datasource db {
   provider = "sqlite"
 }
+
+enum AdminRole {
+  SUPER_ADMIN
+  ADMIN
+  STAFF
+}
+
+enum InquiryStatus {
+  NEW
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum InquirySource {
+  CONTACT_FORM
+  CHATBOT
+  PHONE
+  EMAIL
+  MANUAL
+}
+
+enum EstimateRequestStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  ESTIMATE_READY
+  CONVERTED_TO_QUOTATION
+  CANCELLED
+}
+
+enum QuotationStatus {
+  DRAFT
+  READY
+  SENT
+  VIEWED
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  CANCELLED
+}
+
+enum QuotationItemType {
+  PRODUCT
+  SERVICE
+  LABOR
+  MATERIAL
+  TRANIT
+  OTHER
+}
+
+model AdminUser {
+  id                 String      @id @default(uuid())
+  fullName           String
+  email              String      @unique
+  passwordHash       String
+  role               AdminRole   @default(STAFF)
+  isActive           Boolean     @default(true)
+  lastLoginAt        DateTime?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  preparedQuotations Quotation[] @relation("PreparedQuotations")
+  approvedQuotations Quotation[] @relation("ApprovedQuotations")
+
+  @@index([fullName])
+  @@index([email])
+  @@index([role])
+  @@index([isActive])
+}
+
+model Customer {
+  id               String            @id @default(uuid())
+  fullName         String
+  companyName      String?
+  email            String
+  mobileNumber     String
+  address          String
+  city             String
+  province         String
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  inquiries        Inquiry[]
+  estimateRequests EstimateRequest[]
+  quotations       Quotation[]
+
+  @@index([fullName])
+  @@index([companyName])
+  @@index([email])
+  @@index([mobileNumber])
+  @@index([city])
+  @@index([province])
+}
+
+model Inquiry {
+  id              String        @id @default(uuid())
+  referenceNumber String        @unique
+  customerId      String?
+  fullName        String
+  email           String
+  mobileNumber    String
+  subject         String
+  message         String
+  status          InquiryStatus @default(NEW)
+  source          InquirySource @default(CONTACT_FORM)
+  internalNotes   String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  customer        Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  @@index([customerId])
+  @@index([fullName])
+  @@index([email])
+  @@index([mobileNumber])
+  @@index([subject])
+  @@index([status])
+  @@index([source])
+  @@index([createdAt])
+}
+
+model EstimateRequest {
+  id                      String                @id @default(uuid())
+  estimateNumber          String                @unique
+  customerId              String
+  propertyType            String
+  serviceAddress          String
+  airconType              String
+  airconCapacity          String
+  quantity                Int
+  selectedService         String
+  preferredDate           DateTime
+  notes                   String
+  estimatedSubtotal       Decimal               @default(0)
+  estimatedAdditionalFees Decimal               @default(0)
+  estimatedTax            Decimal               @default(0)
+  estimatedTotal          Decimal               @default(0)
+  status                  EstimateRequestStatus @default(SUBMITTED)
+  createdAt               DateTime              @default(now())
+  updatedAt               DateTime              @updatedAt
+  customer                Customer              @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  quotation               Quotation?
+
+  @@index([customerId])
+  @@index([propertyType])
+  @@index([airconType])
+  @@index([selectedService])
+  @@index([preferredDate])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Quotation {
+  id                String           @id @default(uuid())
+  quotationNumber   String           @unique
+  customerId        String
+  estimateRequestId String?          @unique
+  quotationDate     DateTime
+  validUntil        DateTime
+  subtotal          Decimal          @default(0)
+  discount          Decimal          @default(0)
+  taxRate           Decimal          @default(0)
+  taxAmount         Decimal          @default(0)
+  additionalFees    Decimal          @default(0)
+  grandTotal        Decimal          @default(0)
+  scopeOfWork       String
+  exclusions        String
+  paymentTerms      String
+  warrantyTerms     String
+  notes             String
+  preparedById      String
+  approvedById      String?
+  status            QuotationStatus  @default(DRAFT)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  customer          Customer         @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  estimateRequest   EstimateRequest? @relation(fields: [estimateRequestId], references: [id], onDelete: SetNull)
+  preparedBy        AdminUser        @relation("PreparedQuotations", fields: [preparedById], references: [id], onDelete: Restrict)
+  approvedBy        AdminUser?       @relation("ApprovedQuotations", fields: [approvedById], references: [id], onDelete: SetNull)
+  items             QuotationItem[]
+
+  @@index([customerId])
+  @@index([preparedById])
+  @@index([approvedById])
+  @@index([quotationDate])
+  @@index([validUntil])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model QuotationItem {
+  id          String            @id @default(uuid())
+  quotationId String
+  itemType    QuotationItemType
+  description String
+  quantity    Decimal
+  unit        String
+  unitPrice   Decimal           @default(0)
+  amount      Decimal           @default(0)
+  sortOrder   Int               @default(0)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  quotation   Quotation         @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+
+  @@index([quotationId])
+  @@index([itemType])
+  @@index([description])
+  @@index([sortOrder])
+}
+
+model CompanySetting {
+  id                    String   @id @default(uuid())
+  companyName           String
+  companyAddress        String
+  companyPhone          String
+  companyEmail          String
+  quotationValidityDays Int      @default(30)
+  estimateValidityDays  Int      @default(7)
+  taxRate               Decimal  @default(0)
+  estimateDisclaimer    String
+  quotationTerms        String
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([companyName])
+  @@index([companyEmail])
+}

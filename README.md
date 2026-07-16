@@ -1,8 +1,8 @@
 # RRDS Airconditioning Services Website
 
-Phase 1 project foundation for the RRDS Airconditioning Services Website.
+Project foundation for the RRDS Airconditioning Services Website.
 
-This repository is intentionally limited to the initial frontend and backend setup. Authentication, quotation workflows, chatbot features, business database models, and landing page design are not included in this phase.
+Phase 3 adds the Prisma + SQLite database design for administrators, customers, inquiries, estimate requests, quotations, quotation items, and company settings. Authentication flows, admin dashboard pages, quotation forms, and chatbot features are not included yet.
 
 ## Technology Stack
 
@@ -30,33 +30,15 @@ Backend:
 ## Folder Structure
 
 ```text
-rrds-website/
+rrds/
 ├── frontend/
 │   └── src/
-│       ├── assets/
-│       ├── components/
-│       ├── layouts/
-│       ├── pages/
-│       │   ├── public/
-│       │   └── admin/
-│       ├── routes/
-│       ├── services/
-│       ├── types/
-│       ├── App.tsx
-│       └── main.tsx
 ├── backend/
 │   ├── prisma/
-│   │   └── schema.prisma
+│   │   ├── migrations/
+│   │   ├── schema.prisma
+│   │   └── seed.ts
 │   └── src/
-│       ├── config/
-│       ├── controllers/
-│       ├── middlewares/
-│       ├── routes/
-│       ├── services/
-│       ├── types/
-│       ├── utils/
-│       ├── app.ts
-│       └── server.ts
 ├── docs/
 ├── .gitignore
 └── README.md
@@ -67,14 +49,14 @@ rrds-website/
 Install frontend dependencies:
 
 ```bash
-cd rrds-website/frontend
+cd frontend
 npm install
 ```
 
 Install backend dependencies:
 
 ```bash
-cd rrds-website/backend
+cd backend
 npm install
 ```
 
@@ -94,12 +76,15 @@ Backend: `backend/.env`
 PORT=5000
 DATABASE_URL="file:./dev.db"
 FRONTEND_URL=http://localhost:5173
+ADMIN_NAME="RRDS Super Admin"
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=change-this-password
 ```
 
 ## Run the Frontend
 
 ```bash
-cd rrds-website/frontend
+cd frontend
 npm run dev
 ```
 
@@ -122,7 +107,7 @@ Placeholder routes:
 ## Run the Backend
 
 ```bash
-cd rrds-website/backend
+cd backend
 npm run dev
 ```
 
@@ -147,14 +132,27 @@ Expected response:
 }
 ```
 
-## Initialize Prisma
+## Phase 3 Database Setup
 
 The Prisma schema is configured for SQLite development.
+
+Create `backend/.env` from `backend/.env.example`, then update the admin seed values:
+
+```bash
+cd backend
+cp .env.example .env
+```
+
+On Windows PowerShell:
+
+```powershell
+cd backend
+Copy-Item .env.example .env
+```
 
 Generate the Prisma client:
 
 ```bash
-cd rrds-website/backend
 npm run prisma:generate
 ```
 
@@ -164,10 +162,44 @@ Confirm the Prisma schema is valid:
 npm run prisma:validate
 ```
 
-Create or sync the local SQLite database:
+Create the SQLite database and run migrations:
 
 ```bash
-npm run prisma:push
+npm run prisma:migrate -- --name phase_3_database_design
 ```
 
-The Phase 1 schema does not include business models yet. It only confirms the application can connect to SQLite.
+Seed the initial super admin and company settings:
+
+```bash
+npm run prisma:seed
+```
+
+Alternative direct Prisma seed command:
+
+```bash
+npx prisma db seed
+```
+
+The seed script inserts or updates:
+
+- One `SUPER_ADMIN` using `ADMIN_NAME`, `ADMIN_EMAIL`, and `ADMIN_PASSWORD`
+- One default `CompanySetting`
+
+## Phase 3 Database Models
+
+- `AdminUser`
+- `Customer`
+- `Inquiry`
+- `EstimateRequest`
+- `Quotation`
+- `QuotationItem`
+- `CompanySetting`
+
+## Phase 3 Enums
+
+- `AdminRole`
+- `InquiryStatus`
+- `InquirySource`
+- `EstimateRequestStatus`
+- `QuotationStatus`
+- `QuotationItemType`
