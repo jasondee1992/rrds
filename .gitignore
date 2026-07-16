@@ -1,0 +1,20 @@
+node_modules/
+dist/
+build/
+.env
+.env.*
+!.env.example
+*.log
+coverage/
+
+# Prisma development database files
+dev.db
+dev.db-journal
+backend/prisma/dev.db
+backend/prisma/dev.db-journal
+
+# IDE and OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
