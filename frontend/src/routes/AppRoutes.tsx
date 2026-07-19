@@ -2,6 +2,8 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { ProtectedAdminRoute } from "../components/admin/ProtectedAdminRoute";
 import { AdminLayout } from "../layouts/AdminLayout";
 import { AdminDashboardPage } from "../pages/admin/AdminDashboardPage";
+import { AdminInquiriesPage } from "../pages/admin/AdminInquiriesPage";
+import { AdminInquiryDetailsPage } from "../pages/admin/AdminInquiryDetailsPage";
 import { AdminLoginPage } from "../pages/admin/AdminLoginPage";
 import { AdminPlaceholderPage } from "../pages/admin/AdminPlaceholderPage";
 import { PublicLayout } from "../layouts/PublicLayout";
@@ -28,7 +30,8 @@ export function AppRoutes() {
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="dashboard" element={<AdminDashboardPage />} />
-          <Route path="inquiries" element={<AdminPlaceholderPage title="Inquiries" />} />
+          <Route path="inquiries" element={<AdminInquiriesPage />} />
+          <Route path="inquiries/:id" element={<AdminInquiryDetailsPage />} />
           <Route
             path="estimate-requests"
             element={<AdminPlaceholderPage title="Estimate Requests" />}

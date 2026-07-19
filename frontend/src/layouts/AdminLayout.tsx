@@ -35,6 +35,10 @@ const adminNavItems: AdminNavItem[] = [
 ];
 
 function getPageTitle(pathname: string) {
+  if (pathname.startsWith("/admin/inquiries/")) {
+    return "Inquiry Details";
+  }
+
   const activeItem = adminNavItems.find((item) => item.path === pathname);
 
   return activeItem?.label ?? "Admin";

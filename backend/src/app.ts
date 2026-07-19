@@ -16,7 +16,7 @@ app.use(
     credentials: true,
   }),
 );
-app.use(express.json());
+app.use(express.json({ limit: "32kb" }));
 app.use(morgan("dev"));
 
 app.use("/api", apiRoutes);

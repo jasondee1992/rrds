@@ -9,6 +9,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { getAdminDashboardSummary } from "../../services/adminDashboardService";
 import type { AdminDashboardSummary } from "../../types/admin";
 
@@ -135,7 +136,15 @@ export function AdminDashboardPage() {
           <div className="mt-4 space-y-3">
             {summary.recentInquiries.length > 0 ? (
               summary.recentInquiries.map((inquiry) => (
-                <div key={inquiry.id} className="rounded-md border border-slate-200 p-3">
+                <Link
+                  key={inquiry.id}
+                  className={`block rounded-md border p-3 transition hover:border-blue-300 hover:bg-blue-50/40 focus:outline-none focus:ring-2 focus:ring-blue-700 ${
+                    inquiry.status === "NEW"
+                      ? "border-cyan-200 bg-cyan-50/60"
+                      : "border-slate-200 bg-white"
+                  }`}
+                  to={`/admin/inquiries/${inquiry.id}`}
+                >
                   <div className="flex items-start justify-between gap-3">
                     <p className="min-w-0 truncate text-sm font-bold text-slate-950">
                       {inquiry.fullName}
@@ -148,7 +157,7 @@ export function AdminDashboardPage() {
                   <p className="mt-2 text-xs font-medium text-slate-500">
                     {inquiry.referenceNumber} - {formatDate(inquiry.createdAt)}
                   </p>
-                </div>
+                </Link>
               ))
             ) : (
               <EmptyState label="No inquiries yet." />
