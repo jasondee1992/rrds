@@ -1,7 +1,7 @@
 import "dotenv/config";
-import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { AdminRole, Prisma, PrismaClient } from "@prisma/client";
+import bcrypt from "bcrypt";
 
 const databaseUrl = process.env.DATABASE_URL;
 const adminName = process.env.ADMIN_NAME;
@@ -19,42 +19,15 @@ if (!adminName || !adminEmail || !adminPassword) {
 const adapter = new PrismaBetterSqlite3({ url: databaseUrl });
 const prisma = new PrismaClient({ adapter });
 
-function hashPassword(password: string): string {
-  const salt = randomBytes(16).toString("hex");
-  const keyLength = 64;
-  const derivedKey = scryptSync(password, salt, keyLength);
-
-  return `scrypt:${keyLength}:${salt}:${derivedKey.toString("hex")}`;
-}
-
-function isScryptHashForPassword(password: string, passwordHash: string): boolean {
-  const [algorithm, keyLengthValue, salt, storedHash] = passwordHash.split(":");
-
-  if (algorithm !== "scrypt" || !keyLengthValue || !salt || !storedHash) {
-    return false;
-  }
-
-  const keyLength = Number(keyLengthValue);
-
-  if (!Number.isInteger(keyLength) || keyLength <= 0) {
-    return false;
-  }
-
-  const storedBuffer = Buffer.from(storedHash, "hex");
-  const derivedBuffer = scryptSync(password, salt, keyLength);
-
-  return storedBuffer.length === derivedBuffer.length && timingSafeEqual(storedBuffer, derivedBuffer);
-}
-
 async function main() {
   const existingAdmin = await prisma.adminUser.findUnique({
     where: { email: adminEmail },
   });
 
   const passwordHash =
-    existingAdmin && isScryptHashForPassword(adminPassword, existingAdmin.passwordHash)
+    existingAdmin && (await bcrypt.compare(adminPassword, existingAdmin.passwordHash).catch(() => false))
       ? existingAdmin.passwordHash
-      : hashPassword(adminPassword);
+      : await bcrypt.hash(adminPassword, 12);
 
   const adminUser = await prisma.adminUser.upsert({
     where: { email: adminEmail },

@@ -2,7 +2,7 @@
 
 Project foundation for the RRDS Airconditioning Services Website.
 
-Phase 3 adds the Prisma + SQLite database design for administrators, customers, inquiries, estimate requests, quotations, quotation items, and company settings. Authentication flows, admin dashboard pages, quotation forms, and chatbot features are not included yet.
+Phase 4 adds secure admin authentication and the protected admin dashboard foundation. Quotation creation, estimate processing, chatbot logic, contact form backend, PDF generation, and content management are not included yet.
 
 ## Technology Stack
 
@@ -26,6 +26,8 @@ Backend:
 - cors
 - helmet
 - morgan
+- JWT
+- bcrypt
 
 ## Folder Structure
 
@@ -76,6 +78,8 @@ Backend: `backend/.env`
 PORT=5000
 DATABASE_URL="file:./dev.db"
 FRONTEND_URL=http://localhost:5173
+JWT_SECRET=replace-with-a-long-random-secret
+JWT_EXPIRES_IN=8h
 ADMIN_NAME="RRDS Super Admin"
 ADMIN_EMAIL=admin@example.com
 ADMIN_PASSWORD=change-this-password
@@ -165,7 +169,7 @@ npm run prisma:validate
 Create the SQLite database and run migrations:
 
 ```bash
-npm run prisma:migrate -- --name phase_3_database_design
+npx prisma migrate dev -n phase_3_database_design
 ```
 
 Seed the initial super admin and company settings:
@@ -203,3 +207,64 @@ The seed script inserts or updates:
 - `EstimateRequestStatus`
 - `QuotationStatus`
 - `QuotationItemType`
+
+## Phase 4 Admin Authentication
+
+Admin users are created through the seed script or database administration. Public admin registration is intentionally not available.
+
+Seed or update the default admin after setting `ADMIN_NAME`, `ADMIN_EMAIL`, and `ADMIN_PASSWORD`:
+
+```bash
+cd backend
+npm run prisma:seed
+```
+
+Start the backend:
+
+```bash
+cd backend
+npm run dev
+```
+
+Start the frontend:
+
+```bash
+cd frontend
+npm run dev
+```
+
+Open the admin login page:
+
+```text
+http://localhost:5173/admin/login
+```
+
+Use the seeded credentials from `backend/.env`:
+
+```text
+Email: admin@example.com
+Password: change-this-password
+```
+
+Change these values before using the project outside local development.
+
+### Admin API Endpoints
+
+```text
+POST /api/admin/auth/login
+GET  /api/admin/auth/me
+POST /api/admin/auth/logout
+GET  /api/admin/dashboard/summary
+```
+
+Protected endpoints require:
+
+```text
+Authorization: Bearer <access-token>
+```
+
+JWT logout is stateless in Phase 4. The logout endpoint returns success, and the frontend removes the stored token. Refresh tokens and token revocation are intentionally not implemented yet.
+
+### Token Storage
+
+The frontend stores the admin access token in `localStorage` for this development phase. The token access code is isolated so it can later be changed to secure HTTP-only cookies.
