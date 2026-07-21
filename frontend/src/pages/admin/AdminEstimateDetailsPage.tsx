@@ -1,17 +1,33 @@
-import { Ban, Copy, Download, ExternalLink, RefreshCw, Save, ArrowLeft } from "lucide-react";
+import {
+  AlertTriangle,
+  Ban,
+  CheckCircle2,
+  Copy,
+  Download,
+  ExternalLink,
+  FileText,
+  RefreshCw,
+  Save,
+  ArrowLeft,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { EstimateStatusBadge } from "../../components/admin/estimates/EstimateStatusBadge";
 import { getSafeApiErrorMessage } from "../../services/apiError";
 import {
+  cancelAdminEstimate,
+  convertAdminEstimateToQuotation,
   disableAdminEstimatePublicAccessToken,
   fetchAdminEstimatePdf,
   getAdminEstimateDetails,
+  markAdminEstimateReady,
   regenerateAdminEstimatePublicAccessToken,
+  saveAdminEstimateReview,
+  startAdminEstimateReview,
   updateAdminEstimateNotes,
   updateAdminEstimateStatus,
 } from "../../services/adminEstimateService";
-import type { AdminEstimateStatus, EstimateDetails } from "../../types/estimate";
+import type { AdminEstimateStatus, EstimateDetails, EstimateReviewPayload } from "../../types/estimate";
 
 const statuses: AdminEstimateStatus[] = [
   "SUBMITTED",
@@ -63,6 +79,25 @@ export function AdminEstimateDetailsPage() {
   const [statusFeedback, setStatusFeedback] = useState("");
   const [notesFeedback, setNotesFeedback] = useState("");
   const [publicAccessFeedback, setPublicAccessFeedback] = useState("");
+  const [reviewFeedback, setReviewFeedback] = useState("");
+  const [conversionResult, setConversionResult] = useState<{
+    id: string;
+    quotationNumber: string;
+  } | null>(null);
+  const [reviewForm, setReviewForm] = useState({
+    reviewSummary: "",
+    recommendedSiteInspection: false,
+    recommendedServiceDate: "",
+    serviceDescription: "",
+    quantity: 1,
+    baseAmount: "0.00",
+    capacityAdjustment: "0.00",
+    urgencyAdjustment: "0.00",
+    additionalFees: "0.00",
+    discount: "0.00",
+    taxRate: "0.00",
+    notes: "",
+  });
 
   const loadEstimate = useCallback(async () => {
     if (!id) {
@@ -82,6 +117,33 @@ export function AdminEstimateDetailsPage() {
           : "SUBMITTED",
       );
       setInternalNotes(result.internalNotes ?? "");
+      const latestRevision = result.latestRevision;
+      const fallbackBaseAmount = Math.max(
+        (Number(result.estimatedSubtotal) - Number(result.estimatedAdditionalFees)) /
+          Math.max(result.quantity, 1),
+        0,
+      ).toFixed(2);
+      setReviewForm({
+        reviewSummary: result.reviewSummary ?? "",
+        recommendedSiteInspection: result.recommendedSiteInspection,
+        recommendedServiceDate: result.recommendedServiceDate
+          ? result.recommendedServiceDate.slice(0, 10)
+          : "",
+        serviceDescription: latestRevision?.serviceDescription ?? result.selectedService,
+        quantity: latestRevision?.quantity ?? result.quantity,
+        baseAmount: latestRevision?.baseAmount ?? fallbackBaseAmount,
+        capacityAdjustment: latestRevision?.capacityAdjustment ?? "0.00",
+        urgencyAdjustment: latestRevision?.urgencyAdjustment ?? "0.00",
+        additionalFees: latestRevision?.additionalFees ?? result.estimatedAdditionalFees,
+        discount: latestRevision?.discount ?? "0.00",
+        taxRate: latestRevision?.taxRate ?? "0.00",
+        notes: latestRevision?.notes ?? "",
+      });
+      setConversionResult(
+        result.quotation
+          ? { id: result.quotation.id, quotationNumber: result.quotation.quotationNumber }
+          : null,
+      );
       setErrorMessage("");
     } catch (error) {
       setErrorMessage(getSafeApiErrorMessage(error, "Unable to load estimate request details."));
@@ -135,6 +197,161 @@ export function AdminEstimateDetailsPage() {
       setErrorMessage("");
     } catch (error) {
       setErrorMessage(getSafeApiErrorMessage(error, "Unable to save internal notes."));
+    } finally {
+      setIsActionBusy(false);
+    }
+  }
+
+  function setReviewValue<K extends keyof typeof reviewForm>(
+    key: K,
+    value: (typeof reviewForm)[K],
+  ) {
+    setReviewForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function reviewedTotalPreview() {
+    const quantity = Number(reviewForm.quantity) || 0;
+    const baseAmount = Number(reviewForm.baseAmount) || 0;
+    const capacityAdjustment = Number(reviewForm.capacityAdjustment) || 0;
+    const urgencyAdjustment = Number(reviewForm.urgencyAdjustment) || 0;
+    const additionalFees = Number(reviewForm.additionalFees) || 0;
+    const discount = Number(reviewForm.discount) || 0;
+    const taxRate = Number(reviewForm.taxRate) || 0;
+    const subtotal = Math.max(
+      quantity * baseAmount + capacityAdjustment + urgencyAdjustment + additionalFees - discount,
+      0,
+    );
+    const tax = subtotal * (taxRate / 100);
+
+    return {
+      subtotal: subtotal.toFixed(2),
+      tax: tax.toFixed(2),
+      total: (subtotal + tax).toFixed(2),
+    };
+  }
+
+  async function handleStartReview() {
+    if (!id) {
+      return;
+    }
+
+    setIsActionBusy(true);
+    setReviewFeedback("");
+
+    try {
+      await startAdminEstimateReview(id);
+      await loadEstimate();
+      setReviewFeedback("Review started.");
+      setErrorMessage("");
+    } catch (error) {
+      setErrorMessage(getSafeApiErrorMessage(error, "Unable to start review."));
+    } finally {
+      setIsActionBusy(false);
+    }
+  }
+
+  async function handleSaveReview() {
+    if (!id) {
+      return;
+    }
+
+    const payload: EstimateReviewPayload = {
+      internalNotes,
+      reviewSummary: reviewForm.reviewSummary,
+      recommendedSiteInspection: reviewForm.recommendedSiteInspection,
+      recommendedServiceDate: reviewForm.recommendedServiceDate || undefined,
+      revision: {
+        serviceDescription: reviewForm.serviceDescription,
+        quantity: Number(reviewForm.quantity),
+        baseAmount: Number(reviewForm.baseAmount),
+        capacityAdjustment: Number(reviewForm.capacityAdjustment),
+        urgencyAdjustment: Number(reviewForm.urgencyAdjustment),
+        additionalFees: Number(reviewForm.additionalFees),
+        discount: Number(reviewForm.discount),
+        taxRate: Number(reviewForm.taxRate),
+        notes: reviewForm.notes,
+      },
+    };
+
+    setIsActionBusy(true);
+    setReviewFeedback("");
+
+    try {
+      await saveAdminEstimateReview(id, payload);
+      await loadEstimate();
+      setReviewFeedback("Review saved as a new revision.");
+      setErrorMessage("");
+    } catch (error) {
+      setErrorMessage(getSafeApiErrorMessage(error, "Unable to save review."));
+    } finally {
+      setIsActionBusy(false);
+    }
+  }
+
+  async function handleMarkReady() {
+    if (!id) {
+      return;
+    }
+
+    setIsActionBusy(true);
+    setReviewFeedback("");
+
+    try {
+      await markAdminEstimateReady(id);
+      await loadEstimate();
+      setReviewFeedback("Estimate marked ready.");
+      setErrorMessage("");
+    } catch (error) {
+      setErrorMessage(getSafeApiErrorMessage(error, "Unable to mark estimate ready."));
+    } finally {
+      setIsActionBusy(false);
+    }
+  }
+
+  async function handleCancelEstimate() {
+    if (!id || !window.confirm("Cancel this estimate request?")) {
+      return;
+    }
+
+    setIsActionBusy(true);
+    setReviewFeedback("");
+
+    try {
+      await cancelAdminEstimate(id);
+      await loadEstimate();
+      setReviewFeedback("Estimate cancelled.");
+      setErrorMessage("");
+    } catch (error) {
+      setErrorMessage(getSafeApiErrorMessage(error, "Unable to cancel estimate."));
+    } finally {
+      setIsActionBusy(false);
+    }
+  }
+
+  async function handleConvertToQuotation() {
+    if (
+      !id ||
+      !window.confirm(
+        "Convert this reviewed estimate into a draft official quotation?\n\nThe original client estimate will remain unchanged. A new draft quotation will be created for final editing and approval.",
+      )
+    ) {
+      return;
+    }
+
+    setIsActionBusy(true);
+    setReviewFeedback("");
+
+    try {
+      const result = await convertAdminEstimateToQuotation(id);
+      setConversionResult({
+        id: result.quotation.id,
+        quotationNumber: result.quotation.quotationNumber,
+      });
+      await loadEstimate();
+      setReviewFeedback(`Draft quotation ${result.quotation.quotationNumber} created.`);
+      setErrorMessage("");
+    } catch (error) {
+      setErrorMessage(getSafeApiErrorMessage(error, "Unable to convert estimate."));
     } finally {
       setIsActionBusy(false);
     }
@@ -265,6 +482,15 @@ export function AdminEstimateDetailsPage() {
     return null;
   }
 
+  const previewTotals = reviewedTotalPreview();
+  const canConvert =
+    estimate.status === "ESTIMATE_READY" &&
+    Boolean(estimate.latestRevision) &&
+    !estimate.quotation &&
+    !conversionResult;
+  const isReviewLocked =
+    estimate.status === "CANCELLED" || estimate.status === "CONVERTED_TO_QUOTATION";
+
   return (
     <div className="space-y-5">
       <Link
@@ -349,6 +575,250 @@ export function AdminEstimateDetailsPage() {
         </div>
 
         <div className="space-y-5">
+          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-base font-bold text-slate-950">Admin review</h2>
+            <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+              <DetailItem label="Reviewed by" value={estimate.reviewedBy?.fullName} />
+              <DetailItem label="Reviewed date" value={formatDate(estimate.reviewedAt)} />
+              <DetailItem
+                label="Recommended inspection"
+                value={estimate.recommendedSiteInspection ? "Yes" : "No"}
+              />
+              <DetailItem
+                label="Recommended service date"
+                value={formatDate(estimate.recommendedServiceDate)}
+              />
+            </dl>
+
+            <div className="mt-5 grid gap-4">
+              <label className="text-sm font-semibold text-slate-800">
+                Review summary
+                <textarea
+                  className="mt-2 min-h-24 w-full resize-y rounded-md border border-slate-300 bg-white px-3 py-3 text-sm outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20"
+                  disabled={isActionBusy || isReviewLocked}
+                  maxLength={2000}
+                  onChange={(event) => setReviewValue("reviewSummary", event.target.value)}
+                  value={reviewForm.reviewSummary}
+                />
+              </label>
+              <label className="flex items-center gap-3 rounded-md border border-slate-200 bg-slate-50 p-3 text-sm font-semibold text-slate-800">
+                <input
+                  checked={reviewForm.recommendedSiteInspection}
+                  className="h-4 w-4 rounded border-slate-300 text-blue-700 focus:ring-blue-700"
+                  disabled={isActionBusy || isReviewLocked}
+                  onChange={(event) =>
+                    setReviewValue("recommendedSiteInspection", event.target.checked)
+                  }
+                  type="checkbox"
+                />
+                Recommended site inspection
+              </label>
+              <label className="text-sm font-semibold text-slate-800">
+                Recommended service date
+                <input
+                  className="mt-2 min-h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20"
+                  disabled={isActionBusy || isReviewLocked}
+                  onChange={(event) => setReviewValue("recommendedServiceDate", event.target.value)}
+                  type="date"
+                  value={reviewForm.recommendedServiceDate}
+                />
+              </label>
+            </div>
+
+            <div className="mt-6 rounded-md border border-slate-200 bg-slate-50 p-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
+                <p className="text-sm font-medium leading-6 text-slate-700">
+                  Reviewed values are stored as separate revisions. The original client estimate
+                  and watermarked estimate PDF keep the submission values.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              <label className="text-sm font-semibold text-slate-800 sm:col-span-2">
+                Service description
+                <input
+                  className="mt-2 min-h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20"
+                  disabled={isActionBusy || isReviewLocked}
+                  maxLength={240}
+                  onChange={(event) => setReviewValue("serviceDescription", event.target.value)}
+                  value={reviewForm.serviceDescription}
+                />
+              </label>
+              <label className="text-sm font-semibold text-slate-800">
+                Quantity
+                <input
+                  className="mt-2 min-h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20"
+                  disabled={isActionBusy || isReviewLocked}
+                  min={1}
+                  onChange={(event) => setReviewValue("quantity", Number(event.target.value))}
+                  type="number"
+                  value={reviewForm.quantity}
+                />
+              </label>
+              <label className="text-sm font-semibold text-slate-800">
+                Unit price / base estimate
+                <input
+                  className="mt-2 min-h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20"
+                  disabled={isActionBusy || isReviewLocked}
+                  min={0}
+                  onChange={(event) => setReviewValue("baseAmount", event.target.value)}
+                  step="0.01"
+                  type="number"
+                  value={reviewForm.baseAmount}
+                />
+              </label>
+              <label className="text-sm font-semibold text-slate-800">
+                Capacity adjustment
+                <input
+                  className="mt-2 min-h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20"
+                  disabled={isActionBusy || isReviewLocked}
+                  min={0}
+                  onChange={(event) => setReviewValue("capacityAdjustment", event.target.value)}
+                  step="0.01"
+                  type="number"
+                  value={reviewForm.capacityAdjustment}
+                />
+              </label>
+              <label className="text-sm font-semibold text-slate-800">
+                Urgency adjustment
+                <input
+                  className="mt-2 min-h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20"
+                  disabled={isActionBusy || isReviewLocked}
+                  min={0}
+                  onChange={(event) => setReviewValue("urgencyAdjustment", event.target.value)}
+                  step="0.01"
+                  type="number"
+                  value={reviewForm.urgencyAdjustment}
+                />
+              </label>
+              <label className="text-sm font-semibold text-slate-800">
+                Additional fees
+                <input
+                  className="mt-2 min-h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20"
+                  disabled={isActionBusy || isReviewLocked}
+                  min={0}
+                  onChange={(event) => setReviewValue("additionalFees", event.target.value)}
+                  step="0.01"
+                  type="number"
+                  value={reviewForm.additionalFees}
+                />
+              </label>
+              <label className="text-sm font-semibold text-slate-800">
+                Discount
+                <input
+                  className="mt-2 min-h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20"
+                  disabled={isActionBusy || isReviewLocked}
+                  min={0}
+                  onChange={(event) => setReviewValue("discount", event.target.value)}
+                  step="0.01"
+                  type="number"
+                  value={reviewForm.discount}
+                />
+              </label>
+              <label className="text-sm font-semibold text-slate-800">
+                Tax rate
+                <input
+                  className="mt-2 min-h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20"
+                  disabled={isActionBusy || isReviewLocked}
+                  min={0}
+                  onChange={(event) => setReviewValue("taxRate", event.target.value)}
+                  step="0.01"
+                  type="number"
+                  value={reviewForm.taxRate}
+                />
+              </label>
+              <label className="text-sm font-semibold text-slate-800 sm:col-span-2">
+                Admin review notes
+                <textarea
+                  className="mt-2 min-h-24 w-full resize-y rounded-md border border-slate-300 bg-white px-3 py-3 text-sm outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20"
+                  disabled={isActionBusy || isReviewLocked}
+                  maxLength={3000}
+                  onChange={(event) => setReviewValue("notes", event.target.value)}
+                  value={reviewForm.notes}
+                />
+              </label>
+            </div>
+
+            <dl className="mt-5 grid gap-3 rounded-md bg-slate-50 p-4 sm:grid-cols-3">
+              <DetailItem label="Reviewed subtotal" value={formatMoney(previewTotals.subtotal)} />
+              <DetailItem label="Reviewed tax" value={formatMoney(previewTotals.tax)} />
+              <DetailItem label="Reviewed total" value={formatMoney(previewTotals.total)} />
+            </dl>
+
+            <div className="mt-5 grid gap-3">
+              <button
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-blue-700 bg-white px-4 text-sm font-semibold text-blue-800 transition hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-700 disabled:cursor-not-allowed disabled:border-slate-300 disabled:text-slate-400"
+                disabled={isActionBusy || estimate.status !== "SUBMITTED"}
+                onClick={() => void handleStartReview()}
+                type="button"
+              >
+                <FileText aria-hidden="true" className="h-4 w-4" />
+                Start Review
+              </button>
+              <button
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-blue-700 px-4 text-sm font-semibold text-white transition hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                disabled={isActionBusy || isReviewLocked}
+                onClick={() => void handleSaveReview()}
+                type="button"
+              >
+                <Save aria-hidden="true" className="h-4 w-4" />
+                Save Review
+              </button>
+              <button
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-emerald-600 bg-white px-4 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-600 disabled:cursor-not-allowed disabled:border-slate-300 disabled:text-slate-400"
+                disabled={isActionBusy || estimate.status !== "UNDER_REVIEW" || !estimate.latestRevision}
+                onClick={() => void handleMarkReady()}
+                type="button"
+              >
+                <CheckCircle2 aria-hidden="true" className="h-4 w-4" />
+                Mark Estimate Ready
+              </button>
+              <button
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 text-sm font-semibold text-white transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                disabled={isActionBusy || !canConvert}
+                onClick={() => void handleConvertToQuotation()}
+                type="button"
+              >
+                <FileText aria-hidden="true" className="h-4 w-4" />
+                Convert to Draft Quotation
+              </button>
+              <button
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-red-300 bg-white px-4 text-sm font-semibold text-red-700 transition hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:cursor-not-allowed disabled:text-slate-400"
+                disabled={isActionBusy || isReviewLocked}
+                onClick={() => void handleCancelEstimate()}
+                type="button"
+              >
+                <Ban aria-hidden="true" className="h-4 w-4" />
+                Cancel Estimate
+              </button>
+            </div>
+
+            {reviewFeedback ? (
+              <p className="mt-3 text-sm font-medium text-emerald-700">{reviewFeedback}</p>
+            ) : null}
+            {conversionResult ? (
+              <div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-3">
+                <p className="text-sm font-bold text-emerald-900">
+                  Draft quotation {conversionResult.quotationNumber} is available.
+                </p>
+                <Link
+                  className="mt-3 inline-flex text-sm font-bold text-emerald-900 underline"
+                  to={`/admin/quotations/${conversionResult.id}`}
+                >
+                  Open Draft Quotation
+                </Link>
+              </div>
+            ) : null}
+            {estimate.latestRevision ? (
+              <p className="mt-3 text-xs font-medium text-slate-500">
+                Latest saved revision #{estimate.latestRevision.revisionNumber}, created{" "}
+                {formatDate(estimate.latestRevision.createdAt)}.
+              </p>
+            ) : null}
+          </section>
+
           <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-base font-bold text-slate-950">Client estimate access</h2>
             <dl className="mt-4 grid gap-4">

@@ -6,6 +6,13 @@ import {
   updateEstimateRequestStatus,
 } from "../services/estimateService";
 import {
+  cancelEstimateRequest,
+  convertEstimateToDraftQuotation,
+  markEstimateReady,
+  saveEstimateReview,
+  startEstimateReview,
+} from "../services/estimateReviewService";
+import {
   disableEstimatePublicAccessToken,
   getAdminEstimateDocumentById,
   regenerateEstimatePublicAccessToken,
@@ -19,6 +26,7 @@ import {
   estimateIdParamSchema,
   estimateListQuerySchema,
   pdfModeQuerySchema,
+  saveEstimateReviewSchema,
   updateEstimateNotesSchema,
   updateEstimateStatusSchema,
 } from "../validations/estimateSchemas";
@@ -98,6 +106,79 @@ export async function patchAdminEstimateNotes(req: Request, res: Response) {
   );
 
   res.json(successResponse("Internal notes updated", { estimate }));
+}
+
+export async function postAdminEstimateStartReview(req: Request, res: Response) {
+  const estimateId = parseEstimateId(req, res);
+
+  if (!estimateId) {
+    return;
+  }
+
+  const estimate = await startEstimateReview(estimateId, req.admin?.id ?? "");
+
+  res.json(successResponse("Estimate review started", { estimate }));
+}
+
+export async function putAdminEstimateReview(req: Request, res: Response) {
+  const estimateId = parseEstimateId(req, res);
+
+  if (!estimateId) {
+    return;
+  }
+
+  const parsedBody = saveEstimateReviewSchema.safeParse(req.body);
+
+  if (!parsedBody.success) {
+    res.status(400).json(errorResponse("Invalid estimate review values."));
+    return;
+  }
+
+  const revision = await saveEstimateReview(
+    estimateId,
+    parsedBody.data,
+    req.admin?.id ?? "",
+  );
+
+  res.json(successResponse("Estimate review saved", { revision }));
+}
+
+export async function postAdminEstimateReady(req: Request, res: Response) {
+  const estimateId = parseEstimateId(req, res);
+
+  if (!estimateId) {
+    return;
+  }
+
+  const estimate = await markEstimateReady(estimateId, req.admin?.id ?? "");
+
+  res.json(successResponse("Estimate marked ready", { estimate }));
+}
+
+export async function postAdminEstimateCancel(req: Request, res: Response) {
+  const estimateId = parseEstimateId(req, res);
+
+  if (!estimateId) {
+    return;
+  }
+
+  const estimate = await cancelEstimateRequest(estimateId, req.admin?.id ?? "");
+
+  res.json(successResponse("Estimate cancelled", { estimate }));
+}
+
+export async function postAdminEstimateConvertToQuotation(req: Request, res: Response) {
+  const estimateId = parseEstimateId(req, res);
+
+  if (!estimateId) {
+    return;
+  }
+
+  const result = await convertEstimateToDraftQuotation(estimateId, req.admin?.id ?? "");
+
+  res.status(201).json(
+    successResponse("Draft quotation created from estimate", result),
+  );
 }
 
 export async function downloadAdminEstimatePdf(req: Request, res: Response) {

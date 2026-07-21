@@ -8,6 +8,8 @@ export async function getAdminDashboardSummary(_req: Request, res: Response) {
     totalCustomers,
     totalInquiries,
     pendingEstimates,
+    pendingEstimateReviews,
+    convertedEstimates,
     draftQuotations,
     sentQuotations,
     acceptedQuotations,
@@ -22,6 +24,16 @@ export async function getAdminDashboardSummary(_req: Request, res: Response) {
         status: {
           in: [EstimateRequestStatus.SUBMITTED, EstimateRequestStatus.UNDER_REVIEW],
         },
+      },
+    }),
+    prisma.estimateRequest.count({
+      where: {
+        status: EstimateRequestStatus.SUBMITTED,
+      },
+    }),
+    prisma.estimateRequest.count({
+      where: {
+        status: EstimateRequestStatus.CONVERTED_TO_QUOTATION,
       },
     }),
     prisma.quotation.count({ where: { status: QuotationStatus.DRAFT } }),
@@ -79,12 +91,17 @@ export async function getAdminDashboardSummary(_req: Request, res: Response) {
       totalCustomers,
       totalInquiries,
       pendingEstimates,
+      pendingEstimateReviews,
+      convertedEstimates,
       draftQuotations,
       sentQuotations,
       acceptedQuotations,
       recentInquiries,
       recentEstimateRequests,
-      recentQuotations,
+      recentQuotations: recentQuotations.map((quotation) => ({
+        ...quotation,
+        grandTotal: quotation.grandTotal.toFixed(2),
+      })),
     }),
   );
 }

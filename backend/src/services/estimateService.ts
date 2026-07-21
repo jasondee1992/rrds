@@ -18,6 +18,7 @@ import {
   getAdminEstimatePublicAccess,
 } from "./estimateAccessService";
 import { calculateEstimate } from "./estimateCalculationService";
+import { toRevisionResponse } from "./estimateReviewService";
 
 function isUniqueConstraintError(error: unknown) {
   return (
@@ -295,10 +296,41 @@ export async function getEstimateRequestDetails(id: string) {
       estimatedAdditionalFees: true,
       estimatedTax: true,
       estimatedTotal: true,
+      reviewedAt: true,
+      reviewSummary: true,
+      recommendedSiteInspection: true,
+      recommendedServiceDate: true,
       internalNotes: true,
       status: true,
       createdAt: true,
       updatedAt: true,
+      reviewedBy: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+        },
+      },
+      revisions: {
+        orderBy: { revisionNumber: "desc" },
+        take: 1,
+        include: {
+          createdBy: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+            },
+          },
+        },
+      },
+      quotation: {
+        select: {
+          id: true,
+          quotationNumber: true,
+          status: true,
+        },
+      },
       customer: {
         select: {
           id: true,
@@ -324,6 +356,9 @@ export async function getEstimateRequestDetails(id: string) {
     estimatedAdditionalFees: estimate.estimatedAdditionalFees.toFixed(2),
     estimatedTax: estimate.estimatedTax.toFixed(2),
     estimatedTotal: estimate.estimatedTotal.toFixed(2),
+    latestRevision: estimate.revisions[0]
+      ? toRevisionResponse(estimate.revisions[0])
+      : null,
     publicAccess: await getAdminEstimatePublicAccess(id),
     disclaimer: estimateDisclaimer,
   };
@@ -333,10 +368,37 @@ export async function updateEstimateRequestStatus(
   id: string,
   status: Extract<
     EstimateRequestStatus,
-    "SUBMITTED" | "UNDER_REVIEW" | "ESTIMATE_READY" | "CANCELLED"
+    "SUBMITTED" | "UNDER_REVIEW" | "ESTIMATE_READY" | "CONVERTED_TO_QUOTATION" | "CANCELLED"
   >,
 ) {
-  await getEstimateRequestDetails(id);
+  const currentEstimate = await getEstimateRequestDetails(id);
+  const allowedTransitions: Record<string, EstimateRequestStatus[]> = {
+    [EstimateRequestStatus.SUBMITTED]: [
+      EstimateRequestStatus.UNDER_REVIEW,
+      EstimateRequestStatus.CANCELLED,
+    ],
+    [EstimateRequestStatus.UNDER_REVIEW]: [
+      EstimateRequestStatus.ESTIMATE_READY,
+      EstimateRequestStatus.CANCELLED,
+    ],
+    [EstimateRequestStatus.ESTIMATE_READY]: [EstimateRequestStatus.CANCELLED],
+    [EstimateRequestStatus.CONVERTED_TO_QUOTATION]: [],
+    [EstimateRequestStatus.CANCELLED]: [],
+    [EstimateRequestStatus.DRAFT]: [],
+  };
+
+  if (status === currentEstimate.status) {
+    return {
+      id: currentEstimate.id,
+      estimateNumber: currentEstimate.estimateNumber,
+      status: currentEstimate.status,
+      updatedAt: currentEstimate.updatedAt,
+    };
+  }
+
+  if (!allowedTransitions[currentEstimate.status].includes(status)) {
+    throw new AppError("Invalid estimate status transition.", 409);
+  }
 
   return prisma.estimateRequest.update({
     where: { id },

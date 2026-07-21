@@ -90,6 +90,7 @@ export const updateEstimateStatusSchema = z.object({
     EstimateRequestStatus.SUBMITTED,
     EstimateRequestStatus.UNDER_REVIEW,
     EstimateRequestStatus.ESTIMATE_READY,
+    EstimateRequestStatus.CONVERTED_TO_QUOTATION,
     EstimateRequestStatus.CANCELLED,
   ]),
 });
@@ -98,5 +99,33 @@ export const updateEstimateNotesSchema = z.object({
   internalNotes: z.string().trim().max(3000, "Internal notes must be 3000 characters or fewer."),
 });
 
+const moneyInput = z.coerce.number().finite().min(0).max(99_999_999);
+
+export const saveEstimateReviewSchema = z.object({
+  internalNotes: z.string().trim().max(3000).optional().default(""),
+  reviewSummary: z.string().trim().max(2000).optional().default(""),
+  recommendedSiteInspection: z.coerce.boolean().default(false),
+  recommendedServiceDate: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => value || undefined)
+    .refine((value) => !value || !Number.isNaN(Date.parse(`${value}T00:00:00.000Z`)), {
+      message: "Recommended service date must be valid.",
+    }),
+  revision: z.object({
+    serviceDescription: trimmedRequiredString("Service description", 240),
+    quantity: z.coerce.number().int().min(1).max(500),
+    baseAmount: moneyInput,
+    capacityAdjustment: moneyInput.default(0),
+    urgencyAdjustment: moneyInput.default(0),
+    additionalFees: moneyInput.default(0),
+    discount: moneyInput.default(0),
+    taxRate: z.coerce.number().finite().min(0).max(100).default(0),
+    notes: z.string().trim().max(3000).optional().default(""),
+  }),
+});
+
 export type PublicEstimateInput = z.infer<typeof publicEstimateSchema>;
 export type EstimateListQuery = z.infer<typeof estimateListQuerySchema>;
+export type SaveEstimateReviewInput = z.infer<typeof saveEstimateReviewSchema>;

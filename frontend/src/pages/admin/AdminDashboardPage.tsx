@@ -103,7 +103,9 @@ export function AdminDashboardPage() {
   const cards: SummaryCard[] = [
     { label: "Total Customers", value: summary.totalCustomers, Icon: Users },
     { label: "Total Inquiries", value: summary.totalInquiries, Icon: Inbox },
-    { label: "Pending Estimates", value: summary.pendingEstimates, Icon: FileClock },
+    { label: "Pending Reviews", value: summary.pendingEstimateReviews, Icon: FileClock },
+    { label: "Active Estimates", value: summary.pendingEstimates, Icon: ClipboardList },
+    { label: "Converted Estimates", value: summary.convertedEstimates, Icon: FileCheck2 },
     { label: "Draft Quotations", value: summary.draftQuotations, Icon: FileText },
     { label: "Sent Quotations", value: summary.sentQuotations, Icon: Send },
     { label: "Accepted Quotations", value: summary.acceptedQuotations, Icon: FileCheck2 },
@@ -209,7 +211,11 @@ export function AdminDashboardPage() {
           <div className="mt-4 space-y-3">
             {summary.recentQuotations.length > 0 ? (
               summary.recentQuotations.map((quotation) => (
-                <div key={quotation.id} className="rounded-md border border-slate-200 p-3">
+                <Link
+                  key={quotation.id}
+                  className="block rounded-md border border-slate-200 p-3 transition hover:border-blue-300 hover:bg-blue-50/40 focus:outline-none focus:ring-2 focus:ring-blue-700"
+                  to={`/admin/quotations/${quotation.id}`}
+                >
                   <div className="flex items-start justify-between gap-3">
                     <p className="min-w-0 truncate text-sm font-bold text-slate-950">
                       {quotation.customer.fullName}
@@ -224,7 +230,7 @@ export function AdminDashboardPage() {
                   <p className="mt-2 text-xs font-medium text-slate-500">
                     {quotation.quotationNumber} - {formatDate(quotation.createdAt)}
                   </p>
-                </div>
+                </Link>
               ))
             ) : (
               <EmptyState label="No quotations yet." />

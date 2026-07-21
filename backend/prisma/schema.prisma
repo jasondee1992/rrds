@@ -57,17 +57,19 @@ enum QuotationItemType {
 }
 
 model AdminUser {
-  id                 String      @id @default(uuid())
+  id                 String             @id @default(uuid())
   fullName           String
-  email              String      @unique
+  email              String             @unique
   passwordHash       String
-  role               AdminRole   @default(STAFF)
-  isActive           Boolean     @default(true)
+  role               AdminRole          @default(STAFF)
+  isActive           Boolean            @default(true)
   lastLoginAt        DateTime?
-  createdAt          DateTime    @default(now())
-  updatedAt          DateTime    @updatedAt
-  preparedQuotations Quotation[] @relation("PreparedQuotations")
-  approvedQuotations Quotation[] @relation("ApprovedQuotations")
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  preparedQuotations Quotation[]        @relation("PreparedQuotations")
+  approvedQuotations Quotation[]        @relation("ApprovedQuotations")
+  reviewedEstimates  EstimateRequest[]  @relation("ReviewedEstimates")
+  estimateRevisions  EstimateRevision[]
 
   @@index([fullName])
   @@index([email])
@@ -153,14 +155,22 @@ model EstimateRequest {
   publicAccessTokenCreatedAt DateTime?
   publicAccessLastAccessedAt DateTime?
   publicAccessDisabledAt     DateTime?
+  reviewedById               String?
+  reviewedAt                 DateTime?
+  reviewSummary              String?
+  recommendedSiteInspection  Boolean               @default(false)
+  recommendedServiceDate     DateTime?
   internalNotes              String?
   status                     EstimateRequestStatus @default(SUBMITTED)
   createdAt                  DateTime              @default(now())
   updatedAt                  DateTime              @updatedAt
   customer                   Customer              @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  reviewedBy                 AdminUser?            @relation("ReviewedEstimates", fields: [reviewedById], references: [id], onDelete: SetNull)
   quotation                  Quotation?
+  revisions                  EstimateRevision[]
 
   @@index([customerId])
+  @@index([reviewedById])
   @@index([propertyType])
   @@index([airconType])
   @@index([selectedService])
@@ -168,6 +178,34 @@ model EstimateRequest {
   @@index([status])
   @@index([publicAccessTokenExpiresAt])
   @@index([publicAccessDisabledAt])
+  @@index([createdAt])
+}
+
+model EstimateRevision {
+  id                 String          @id @default(uuid())
+  estimateRequestId  String
+  revisionNumber     Int
+  serviceDescription String
+  quantity           Int
+  baseAmount         Decimal         @default(0)
+  capacityAdjustment Decimal         @default(0)
+  urgencyAdjustment  Decimal         @default(0)
+  additionalFees     Decimal         @default(0)
+  discount           Decimal         @default(0)
+  taxRate            Decimal         @default(0)
+  taxAmount          Decimal         @default(0)
+  subtotal           Decimal         @default(0)
+  total              Decimal         @default(0)
+  notes              String?
+  createdById        String
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  estimateRequest    EstimateRequest @relation(fields: [estimateRequestId], references: [id], onDelete: Cascade)
+  createdBy          AdminUser       @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@unique([estimateRequestId, revisionNumber])
+  @@index([estimateRequestId])
+  @@index([createdById])
   @@index([createdAt])
 }
 

@@ -1,8 +1,10 @@
 import type { ApiResponse } from "../types/api";
 import type {
   AdminEstimateStatus,
+  EstimateConversionResult,
   EstimateDetails,
   EstimatePublicAccess,
+  EstimateReviewPayload,
   EstimateListFilters,
   EstimateListResponse,
 } from "../types/estimate";
@@ -63,6 +65,67 @@ export async function updateAdminEstimateNotes(id: string, internalNotes: string
   }
 
   return response.data.data.estimate;
+}
+
+export async function startAdminEstimateReview(id: string) {
+  const response = await apiClient.post<
+    ApiResponse<{ estimate: Pick<EstimateDetails, "id" | "estimateNumber" | "status" | "reviewedAt" | "updatedAt"> }>
+  >(`/admin/estimates/${id}/start-review`);
+
+  if (!response.data.data) {
+    throw new Error("Missing estimate review response data.");
+  }
+
+  return response.data.data.estimate;
+}
+
+export async function saveAdminEstimateReview(id: string, payload: EstimateReviewPayload) {
+  const response = await apiClient.put<ApiResponse<{ revision: EstimateDetails["latestRevision"] }>>(
+    `/admin/estimates/${id}/review`,
+    payload,
+  );
+
+  if (!response.data.data) {
+    throw new Error("Missing estimate review response data.");
+  }
+
+  return response.data.data.revision;
+}
+
+export async function markAdminEstimateReady(id: string) {
+  const response = await apiClient.post<
+    ApiResponse<{ estimate: Pick<EstimateDetails, "id" | "estimateNumber" | "status" | "updatedAt"> }>
+  >(`/admin/estimates/${id}/mark-ready`);
+
+  if (!response.data.data) {
+    throw new Error("Missing estimate ready response data.");
+  }
+
+  return response.data.data.estimate;
+}
+
+export async function cancelAdminEstimate(id: string) {
+  const response = await apiClient.post<
+    ApiResponse<{ estimate: Pick<EstimateDetails, "id" | "estimateNumber" | "status" | "updatedAt"> }>
+  >(`/admin/estimates/${id}/cancel`);
+
+  if (!response.data.data) {
+    throw new Error("Missing estimate cancellation response data.");
+  }
+
+  return response.data.data.estimate;
+}
+
+export async function convertAdminEstimateToQuotation(id: string) {
+  const response = await apiClient.post<ApiResponse<EstimateConversionResult>>(
+    `/admin/estimates/${id}/convert-to-quotation`,
+  );
+
+  if (!response.data.data) {
+    throw new Error("Missing estimate conversion response data.");
+  }
+
+  return response.data.data;
 }
 
 export async function fetchAdminEstimatePdf(

@@ -8,6 +8,8 @@ import { AdminInquiriesPage } from "../pages/admin/AdminInquiriesPage";
 import { AdminInquiryDetailsPage } from "../pages/admin/AdminInquiryDetailsPage";
 import { AdminLoginPage } from "../pages/admin/AdminLoginPage";
 import { AdminPlaceholderPage } from "../pages/admin/AdminPlaceholderPage";
+import { AdminQuotationDetailsPage } from "../pages/admin/AdminQuotationDetailsPage";
+import { AdminQuotationsPage } from "../pages/admin/AdminQuotationsPage";
 import { PublicLayout } from "../layouts/PublicLayout";
 import { AboutPage } from "../pages/public/AboutPage";
 import { ContactPage } from "../pages/public/ContactPage";
@@ -39,7 +41,8 @@ export function AppRoutes() {
           <Route path="estimates" element={<AdminEstimatesPage />} />
           <Route path="estimates/:id" element={<AdminEstimateDetailsPage />} />
           <Route path="estimate-requests" element={<Navigate to="/admin/estimates" replace />} />
-          <Route path="quotations" element={<AdminPlaceholderPage title="Quotations" />} />
+          <Route path="quotations" element={<AdminQuotationsPage />} />
+          <Route path="quotations/:id" element={<AdminQuotationDetailsPage />} />
           <Route path="customers" element={<AdminPlaceholderPage title="Customers" />} />
           <Route path="services" element={<AdminPlaceholderPage title="Services" />} />
           <Route path="projects" element={<AdminPlaceholderPage title="Projects" />} />
