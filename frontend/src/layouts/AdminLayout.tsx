@@ -26,7 +26,7 @@ type AdminNavItem = {
 const adminNavItems: AdminNavItem[] = [
   { label: "Dashboard", path: "/admin/dashboard", Icon: BarChart3 },
   { label: "Inquiries", path: "/admin/inquiries", Icon: MessageSquare },
-  { label: "Estimate Requests", path: "/admin/estimate-requests", Icon: ClipboardList },
+  { label: "Estimate Requests", path: "/admin/estimates", Icon: ClipboardList },
   { label: "Quotations", path: "/admin/quotations", Icon: FileText },
   { label: "Customers", path: "/admin/customers", Icon: Users },
   { label: "Services", path: "/admin/services", Icon: Wrench },
@@ -37,6 +37,10 @@ const adminNavItems: AdminNavItem[] = [
 function getPageTitle(pathname: string) {
   if (pathname.startsWith("/admin/inquiries/")) {
     return "Inquiry Details";
+  }
+
+  if (pathname.startsWith("/admin/estimates/")) {
+    return "Estimate Details";
   }
 
   const activeItem = adminNavItems.find((item) => item.path === pathname);

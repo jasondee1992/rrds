@@ -170,7 +170,15 @@ export function AdminDashboardPage() {
           <div className="mt-4 space-y-3">
             {summary.recentEstimateRequests.length > 0 ? (
               summary.recentEstimateRequests.map((estimate) => (
-                <div key={estimate.id} className="rounded-md border border-slate-200 p-3">
+                <Link
+                  key={estimate.id}
+                  className={`block rounded-md border p-3 transition hover:border-blue-300 hover:bg-blue-50/40 focus:outline-none focus:ring-2 focus:ring-blue-700 ${
+                    estimate.status === "SUBMITTED"
+                      ? "border-cyan-200 bg-cyan-50/60"
+                      : "border-slate-200 bg-white"
+                  }`}
+                  to={`/admin/estimates/${estimate.id}`}
+                >
                   <div className="flex items-start justify-between gap-3">
                     <p className="min-w-0 truncate text-sm font-bold text-slate-950">
                       {estimate.customer.fullName}
@@ -185,7 +193,7 @@ export function AdminDashboardPage() {
                   <p className="mt-2 text-xs font-medium text-slate-500">
                     {estimate.estimateNumber} - {formatDate(estimate.createdAt)}
                   </p>
-                </div>
+                </Link>
               ))
             ) : (
               <EmptyState label="No estimate requests yet." />

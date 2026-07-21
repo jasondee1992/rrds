@@ -1,0 +1,89 @@
+import { EstimateRequestStatus } from "@prisma/client";
+import { z } from "zod";
+import {
+  airconCapacities,
+  airconTypes,
+  estimateServices,
+  propertyTypes,
+  unitConditions,
+  urgencyLevels,
+} from "../config/estimatePricing";
+
+const trimmedRequiredString = (fieldName: string, maxLength: number) =>
+  z
+    .string()
+    .trim()
+    .min(1, `${fieldName} is required.`)
+    .max(maxLength, `${fieldName} must be ${maxLength} characters or fewer.`);
+
+const optionalTrimmedString = (maxLength: number) =>
+  z
+    .string()
+    .trim()
+    .max(maxLength)
+    .optional()
+    .transform((value) => value || undefined);
+
+const optionValues = <T extends readonly string[]>(values: T) => z.enum(values);
+
+export const publicEstimateSchema = z.object({
+  fullName: trimmedRequiredString("Full name", 120),
+  email: z.email("Email must be valid.").trim().toLowerCase().max(160),
+  mobileNumber: trimmedRequiredString("Mobile number", 40),
+  companyName: optionalTrimmedString(120),
+  propertyType: optionValues(propertyTypes),
+  serviceAddress: trimmedRequiredString("Service address", 240),
+  city: trimmedRequiredString("City", 120),
+  province: trimmedRequiredString("Province", 120),
+  airconType: optionValues(airconTypes),
+  airconCapacity: z.enum(airconCapacities.map((capacity) => capacity.label)),
+  quantity: z.coerce.number().int().min(1).max(50),
+  brand: optionalTrimmedString(80),
+  unitCondition: optionValues(unitConditions),
+  indoorUnitLocation: optionalTrimmedString(160),
+  outdoorUnitLocation: optionalTrimmedString(160),
+  selectedService: z.enum(estimateServices.map((service) => service.label)),
+  preferredDate: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => value || undefined)
+    .refine((value) => !value || !Number.isNaN(Date.parse(`${value}T00:00:00.000Z`)), {
+      message: "Preferred service date must be valid.",
+    }),
+  notes: z.string().trim().max(3000).optional().default(""),
+  urgencyLevel: z.enum(urgencyLevels.map((urgency) => urgency.label)),
+  disclaimerAccepted: z.literal(true),
+  website: z.string().trim().max(0, "Unable to submit this request.").optional().or(z.literal("")),
+});
+
+export const estimateIdParamSchema = z.object({
+  id: z.uuid("Invalid estimate request ID."),
+});
+
+export const estimateListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+  search: z.string().trim().max(160).optional().default(""),
+  status: z.enum(EstimateRequestStatus).optional(),
+  service: z.string().trim().max(120).optional().default(""),
+  dateFrom: z.iso.date().optional(),
+  dateTo: z.iso.date().optional(),
+  sort: z.enum(["latest", "oldest"]).optional().default("latest"),
+});
+
+export const updateEstimateStatusSchema = z.object({
+  status: z.enum([
+    EstimateRequestStatus.SUBMITTED,
+    EstimateRequestStatus.UNDER_REVIEW,
+    EstimateRequestStatus.ESTIMATE_READY,
+    EstimateRequestStatus.CANCELLED,
+  ]),
+});
+
+export const updateEstimateNotesSchema = z.object({
+  internalNotes: z.string().trim().max(3000, "Internal notes must be 3000 characters or fewer."),
+});
+
+export type PublicEstimateInput = z.infer<typeof publicEstimateSchema>;
+export type EstimateListQuery = z.infer<typeof estimateListQuerySchema>;

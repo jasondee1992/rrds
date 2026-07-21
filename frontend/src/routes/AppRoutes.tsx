@@ -2,6 +2,8 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { ProtectedAdminRoute } from "../components/admin/ProtectedAdminRoute";
 import { AdminLayout } from "../layouts/AdminLayout";
 import { AdminDashboardPage } from "../pages/admin/AdminDashboardPage";
+import { AdminEstimateDetailsPage } from "../pages/admin/AdminEstimateDetailsPage";
+import { AdminEstimatesPage } from "../pages/admin/AdminEstimatesPage";
 import { AdminInquiriesPage } from "../pages/admin/AdminInquiriesPage";
 import { AdminInquiryDetailsPage } from "../pages/admin/AdminInquiryDetailsPage";
 import { AdminLoginPage } from "../pages/admin/AdminLoginPage";
@@ -32,10 +34,9 @@ export function AppRoutes() {
           <Route path="dashboard" element={<AdminDashboardPage />} />
           <Route path="inquiries" element={<AdminInquiriesPage />} />
           <Route path="inquiries/:id" element={<AdminInquiryDetailsPage />} />
-          <Route
-            path="estimate-requests"
-            element={<AdminPlaceholderPage title="Estimate Requests" />}
-          />
+          <Route path="estimates" element={<AdminEstimatesPage />} />
+          <Route path="estimates/:id" element={<AdminEstimateDetailsPage />} />
+          <Route path="estimate-requests" element={<Navigate to="/admin/estimates" replace />} />
           <Route path="quotations" element={<AdminPlaceholderPage title="Quotations" />} />
           <Route path="customers" element={<AdminPlaceholderPage title="Customers" />} />
           <Route path="services" element={<AdminPlaceholderPage title="Services" />} />
