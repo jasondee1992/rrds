@@ -7,7 +7,6 @@ import {
   Menu,
   MessageSquare,
   Settings,
-  Snowflake,
   Users,
   Wrench,
   X,
@@ -57,8 +56,8 @@ export function AdminLayout() {
   const sidebarContent = (
     <div className="flex h-full flex-col bg-slate-950 text-white">
       <div className="flex min-h-16 items-center gap-3 border-b border-white/10 px-5">
-        <div className="flex h-10 w-10 items-center justify-center rounded-md bg-cyan-400 text-slate-950">
-          <Snowflake className="h-5 w-5" aria-hidden="true" />
+        <div className="flex h-10 w-16 items-center justify-center rounded-md bg-white px-2">
+          <img alt="RRDS" className="max-h-7 w-auto object-contain" src="/rrds-logo-mark.png" />
         </div>
         <div>
           <p className="text-sm font-bold leading-5">RRDS Admin</p>

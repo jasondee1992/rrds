@@ -52,9 +52,10 @@ async function main() {
 
   const companySettingData = {
     companyName: "RRDS Airconditioning Services",
-    companyAddress: "Philippines",
-    companyPhone: "To be updated",
-    companyEmail: adminEmail,
+    companyAddress:
+      "#420 B Senator Neptali A. Gonzales St. Brgy. San Jose Sitio 4, Mandaluyong, Philippines, 1550",
+    companyPhone: "0947 476 8214",
+    companyEmail: "oneal101982@gmail.com",
     quotationValidityDays: 30,
     estimateValidityDays: 7,
     taxRate: new Prisma.Decimal(0),

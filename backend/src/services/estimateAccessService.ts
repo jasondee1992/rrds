@@ -217,9 +217,11 @@ export function toPublicEstimateDocument(
       "This document is an automated preliminary estimate only and is not an official quotation, invoice, purchase order, contract, or billing document.\n\nFinal pricing is subject to site inspection, technical assessment, availability of materials, actual installation requirements, and approval by RRDS Airconditioning Services.",
     company: {
       name: companySetting?.companyName ?? "RRDS Airconditioning Services",
-      address: companySetting?.companyAddress ?? "Philippines",
-      phone: companySetting?.companyPhone ?? "To be updated",
-      email: companySetting?.companyEmail ?? "admin@example.com",
+      address:
+        companySetting?.companyAddress ??
+        "#420 B Senator Neptali A. Gonzales St. Brgy. San Jose Sitio 4, Mandaluyong, Philippines, 1550",
+      phone: companySetting?.companyPhone ?? "0947 476 8214",
+      email: companySetting?.companyEmail ?? "oneal101982@gmail.com",
     },
     customer: {
       fullName: estimate.customer.fullName,

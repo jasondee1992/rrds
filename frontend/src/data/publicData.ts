@@ -54,6 +54,19 @@ export type Testimonial = {
   isPlaceholder: boolean;
 };
 
+export type ContactDetail = {
+  label: string;
+  value: string;
+  href?: string;
+  Icon: LucideIcon;
+};
+
+export const facebookPageUrl = "https://www.facebook.com/RRDSAirconServices";
+export const companyAddress =
+  "#420 B Senator Neptali A. Gonzales St. Brgy. San Jose Sitio 4, Mandaluyong, Philippines, 1550";
+export const companyPhone = "0947 476 8214";
+export const companyEmail = "oneal101982@gmail.com";
+
 export const navigationLinks: NavigationLink[] = [
   { label: "Home", path: "/" },
   { label: "About Us", path: "/about" },
@@ -220,11 +233,16 @@ export const testimonials: Testimonial[] = [
   },
 ];
 
-export const contactDetails = [
-  { label: "Phone", value: "Phone placeholder", Icon: Phone },
-  { label: "Email", value: "Email placeholder", Icon: MessageCircle },
-  { label: "Address", value: "Address placeholder", Icon: MapPin },
-  { label: "Business Hours", value: "Business hours placeholder", Icon: BriefcaseBusiness },
+export const contactDetails: ContactDetail[] = [
+  { label: "Phone", value: companyPhone, href: `tel:${companyPhone.replaceAll(" ", "")}`, Icon: Phone },
+  { label: "Email", value: companyEmail, href: `mailto:${companyEmail}`, Icon: MessageCircle },
+  { label: "Address", value: companyAddress, Icon: MapPin },
+  {
+    label: "Facebook",
+    value: "RRDS Aircon Services",
+    href: facebookPageUrl,
+    Icon: BriefcaseBusiness,
+  },
 ];
 
 export const quotationSteps = [

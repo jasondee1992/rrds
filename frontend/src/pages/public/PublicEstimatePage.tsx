@@ -129,7 +129,11 @@ export function PublicEstimatePage() {
         <div className="mx-auto max-w-5xl">
           <div className="flex flex-col gap-6 border-b border-slate-200 pb-6 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-sm font-bold uppercase text-blue-700">RRDS Airconditioning Services</p>
+              <img
+                alt="RRDS Airconditioning Services"
+                className="h-16 w-auto max-w-[240px] object-contain"
+                src="/rrds-logo-brand.png"
+              />
               <h1 className="mt-2 text-3xl font-bold text-slate-950">Preliminary Cost Estimate</h1>
               <p className="mt-3 max-w-2xl text-sm font-medium leading-6 text-slate-600">
                 This read-only estimate preview is generated from the saved RRDS estimate request.

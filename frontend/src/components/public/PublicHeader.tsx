@@ -1,4 +1,4 @@
-import { Menu, Snowflake } from "lucide-react";
+import { Menu } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { DesktopNavigation } from "./DesktopNavigation";
@@ -16,15 +16,11 @@ export function PublicHeader() {
           className="flex items-center gap-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-700 focus:ring-offset-2"
           to="/"
         >
-          <span className="flex h-11 w-11 items-center justify-center rounded-md bg-blue-700 text-white">
-            <Snowflake aria-hidden="true" className="h-6 w-6" />
-          </span>
-          <span className="leading-tight">
-            <span className="block text-xl font-black tracking-normal text-slate-950">RRDS</span>
-            <span className="block text-xs font-semibold uppercase tracking-[0.14em] text-blue-700">
-              Airconditioning
-            </span>
-          </span>
+          <img
+            alt="RRDS Airconditioning Services"
+            className="h-12 w-auto max-w-[170px] object-contain sm:h-14 sm:max-w-[220px]"
+            src="/rrds-logo-brand.png"
+          />
         </Link>
 
         <div className="flex items-center gap-4">

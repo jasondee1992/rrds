@@ -84,7 +84,7 @@ export function ContactPage() {
       <section className="bg-white px-6 py-16 sm:py-20">
         <div className="mx-auto max-w-7xl">
           <SectionTitle
-            description="Use this frontend-only contact page layout for Phase 2. Replace placeholder company information when approved details are available."
+            description="Reach RRDS for air-conditioning service inquiries, estimate follow-ups, and site inspection coordination."
             eyebrow="Contact Us"
             title="Get in Touch with RRDS"
           />
@@ -96,8 +96,7 @@ export function ContactPage() {
               </div>
               <h2 className="mt-6 text-2xl font-bold">Company Information</h2>
               <p className="mt-3 text-sm leading-6 text-slate-300">
-                Placeholder contact details for layout approval. Final phone, email, address,
-                and business hours should be provided by RRDS before launch.
+                Contact RRDS Airconditioning Services directly or send a message using the form.
               </p>
               <ul className="mt-8 space-y-5">
                 {contactDetails.map((detail) => (
@@ -107,7 +106,18 @@ export function ContactPage() {
                     </span>
                     <span>
                       <span className="block text-sm font-bold">{detail.label}</span>
-                      <span className="mt-1 block text-sm text-slate-300">{detail.value}</span>
+                      {detail.href ? (
+                        <a
+                          className="mt-1 block break-words text-sm text-slate-300 hover:text-white"
+                          href={detail.href}
+                          rel="noreferrer"
+                          target={detail.href.startsWith("http") ? "_blank" : undefined}
+                        >
+                          {detail.value}
+                        </a>
+                      ) : (
+                        <span className="mt-1 block text-sm text-slate-300">{detail.value}</span>
+                      )}
                     </span>
                   </li>
                 ))}

@@ -6,8 +6,16 @@ export function Footer() {
     <footer className="bg-slate-950 px-6 py-14 text-white">
       <div className="mx-auto grid max-w-7xl gap-10 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div>
-          <Link className="text-2xl font-black tracking-normal" to="/">
-            RRDS
+          <Link
+            aria-label="RRDS Airconditioning Services home"
+            className="inline-flex rounded bg-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:ring-offset-2 focus:ring-offset-slate-950"
+            to="/"
+          >
+            <img
+              alt="RRDS Airconditioning Services"
+              className="h-12 w-auto max-w-[190px] object-contain"
+              src="/rrds-logo-brand.png"
+            />
           </Link>
           <p className="mt-4 max-w-sm text-sm leading-6 text-slate-300">
             Professional air-conditioning installation, maintenance, cleaning, and repair
@@ -50,7 +58,18 @@ export function Footer() {
             {contactDetails.map((item) => (
               <li className="text-sm text-slate-300" key={item.label}>
                 <span className="font-semibold text-white">{item.label}: </span>
-                {item.value}
+                {item.href ? (
+                  <a
+                    className="hover:text-white"
+                    href={item.href}
+                    rel="noreferrer"
+                    target={item.href.startsWith("http") ? "_blank" : undefined}
+                  >
+                    {item.value}
+                  </a>
+                ) : (
+                  item.value
+                )}
               </li>
             ))}
           </ul>

@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import PDFDocument from "pdfkit";
 import type { PublicEstimateDocument } from "./estimateAccessService";
 
@@ -41,6 +43,17 @@ function formatMoney(value: string) {
     style: "currency",
     currency: "PHP",
   }).format(Number(value));
+}
+
+function getPdfLogoPath() {
+  const candidates = [
+    path.resolve(process.cwd(), "../frontend/public/rrds-logo-mark.png"),
+    path.resolve(process.cwd(), "frontend/public/rrds-logo-mark.png"),
+    path.resolve(process.cwd(), "../frontend/public/rrds-logo.png"),
+    path.resolve(process.cwd(), "frontend/public/rrds-logo.png"),
+  ];
+
+  return candidates.find((candidate) => fs.existsSync(candidate)) ?? null;
 }
 
 function drawPageDecoration(doc: PDFKit.PDFDocument) {
@@ -151,19 +164,26 @@ export async function renderEstimatePdf(estimate: PublicEstimateDocument) {
 
     doc.addPage();
 
-    doc.font("Helvetica-Bold").fontSize(22).fillColor("#1d4ed8").text("RRDS", 40, 42);
+    const logoPath = getPdfLogoPath();
+
+    if (logoPath) {
+      doc.image(logoPath, 40, 40, { width: 90 });
+    } else {
+      doc.font("Helvetica-Bold").fontSize(22).fillColor("#1d4ed8").text("RRDS", 40, 42);
+    }
+
     doc
       .font("Helvetica-Bold")
       .fontSize(14)
       .fillColor("#0f172a")
-      .text(cleanText(estimate.company.name, 120), 110, 45);
+      .text(cleanText(estimate.company.name, 120), 150, 45);
     doc
       .font("Helvetica")
       .fontSize(9)
       .fillColor("#475569")
-      .text(cleanText(estimate.company.address, 180), 110, 64)
-      .text(`Phone: ${cleanText(estimate.company.phone, 60)}`, 110)
-      .text(`Email: ${cleanText(estimate.company.email, 120)}`, 110);
+      .text(cleanText(estimate.company.address, 180), 150, 64)
+      .text(`Phone: ${cleanText(estimate.company.phone, 60)}`, 150)
+      .text(`Email: ${cleanText(estimate.company.email, 120)}`, 150);
 
     doc
       .font("Helvetica-Bold")
