@@ -52,6 +52,7 @@ export type PublicEstimatePayload = {
 
 export type PublicEstimateResult = {
   estimateNumber: string;
+  publicAccessToken: string;
   status: EstimateRequestStatus;
   selectedService: string;
   estimatedSubtotal: string;
@@ -60,6 +61,57 @@ export type PublicEstimateResult = {
   estimatedTotal: string;
   disclaimer: string;
   generatedDate: string;
+  validUntil: string;
+};
+
+export type PublicEstimateDocument = {
+  estimateNumber: string;
+  propertyType: string;
+  serviceAddress: string;
+  airconType: string;
+  airconCapacity: string;
+  quantity: number;
+  brand: string | null;
+  unitCondition: string;
+  indoorUnitLocation: string | null;
+  outdoorUnitLocation: string | null;
+  selectedService: string;
+  preferredDate: string | null;
+  notes: string;
+  urgencyLevel: string;
+  estimatedSubtotal: string;
+  estimatedAdditionalFees: string;
+  estimatedTax: string;
+  estimatedTotal: string;
+  status: EstimateRequestStatus;
+  generatedDate: string;
+  validUntil: string;
+  disclaimer: string;
+  requiredDisclaimer: string;
+  company: {
+    name: string;
+    address: string;
+    phone: string;
+    email: string;
+  };
+  customer: {
+    fullName: string;
+    companyName: string | null;
+    email: string;
+    mobileNumber: string;
+    address: string;
+    city: string;
+    province: string;
+  };
+};
+
+export type EstimatePublicAccess = {
+  enabled: boolean;
+  createdAt: string | null;
+  expiresAt: string | null;
+  lastAccessedAt: string | null;
+  disabledAt: string | null;
+  publicUrl: string | null;
 };
 
 export type EstimateListFilters = {
@@ -115,6 +167,7 @@ export type EstimateDetails = {
   createdAt: string;
   updatedAt: string;
   disclaimer: string;
+  publicAccess: EstimatePublicAccess;
   customer: {
     id: string;
     fullName: string;

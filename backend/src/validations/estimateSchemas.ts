@@ -61,6 +61,19 @@ export const estimateIdParamSchema = z.object({
   id: z.uuid("Invalid estimate request ID."),
 });
 
+export const publicEstimateTokenParamSchema = z.object({
+  token: z
+    .string()
+    .trim()
+    .min(32)
+    .max(128)
+    .regex(/^[A-Za-z0-9_-]+$/, "Invalid estimate access token."),
+});
+
+export const pdfModeQuerySchema = z.object({
+  mode: z.enum(["download", "inline"]).optional().default("download"),
+});
+
 export const estimateListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(10),

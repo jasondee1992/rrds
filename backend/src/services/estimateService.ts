@@ -12,6 +12,11 @@ import {
 import { prisma } from "../config/prisma";
 import { AppError } from "../utils/AppError";
 import type { EstimateListQuery, PublicEstimateInput } from "../validations/estimateSchemas";
+import {
+  buildPublicAccessTokenData,
+  calculateValidUntil,
+  getAdminEstimatePublicAccess,
+} from "./estimateAccessService";
 import { calculateEstimate } from "./estimateCalculationService";
 
 function isUniqueConstraintError(error: unknown) {
@@ -104,7 +109,7 @@ async function getOrCreateEstimateCustomer(input: PublicEstimateInput) {
 export async function createPublicEstimate(input: PublicEstimateInput) {
   const companySetting = await prisma.companySetting.findFirst({
     orderBy: { createdAt: "asc" },
-    select: { taxRate: true },
+    select: { taxRate: true, estimateValidityDays: true },
   });
   const calculation = calculateEstimate({
     selectedService: input.selectedService,
@@ -118,6 +123,12 @@ export async function createPublicEstimate(input: PublicEstimateInput) {
 
   for (let attempt = 0; attempt < 10; attempt += 1) {
     const estimateNumber = await getNextEstimateNumber(year);
+    const generatedDate = new Date();
+    const validUntil = calculateValidUntil(
+      generatedDate,
+      companySetting?.estimateValidityDays ?? 7,
+    );
+    const tokenData = await buildPublicAccessTokenData(validUntil, generatedDate);
 
     try {
       const estimateRequest = await prisma.estimateRequest.create({
@@ -141,7 +152,9 @@ export async function createPublicEstimate(input: PublicEstimateInput) {
           estimatedAdditionalFees: calculation.estimatedAdditionalFees,
           estimatedTax: calculation.estimatedTax,
           estimatedTotal: calculation.estimatedTotal,
+          ...tokenData.data,
           status: EstimateRequestStatus.SUBMITTED,
+          createdAt: generatedDate,
         },
         select: {
           estimateNumber: true,
@@ -153,9 +166,11 @@ export async function createPublicEstimate(input: PublicEstimateInput) {
 
       return {
         estimateNumber: estimateRequest.estimateNumber,
+        publicAccessToken: tokenData.token,
         status: estimateRequest.status,
         selectedService: estimateRequest.selectedService,
         generatedDate: estimateRequest.createdAt,
+        validUntil,
         estimatedSubtotal: calculation.display.estimatedSubtotal,
         estimatedAdditionalFees: calculation.display.estimatedAdditionalFees,
         estimatedTax: calculation.display.estimatedTax,
@@ -309,6 +324,7 @@ export async function getEstimateRequestDetails(id: string) {
     estimatedAdditionalFees: estimate.estimatedAdditionalFees.toFixed(2),
     estimatedTax: estimate.estimatedTax.toFixed(2),
     estimatedTotal: estimate.estimatedTotal.toFixed(2),
+    publicAccess: await getAdminEstimatePublicAccess(id),
     disclaimer: estimateDisclaimer,
   };
 }

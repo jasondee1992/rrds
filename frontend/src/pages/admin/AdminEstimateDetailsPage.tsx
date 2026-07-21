@@ -1,10 +1,13 @@
-import { ArrowLeft, Save } from "lucide-react";
+import { Ban, Copy, Download, ExternalLink, RefreshCw, Save, ArrowLeft } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { EstimateStatusBadge } from "../../components/admin/estimates/EstimateStatusBadge";
 import { getSafeApiErrorMessage } from "../../services/apiError";
 import {
+  disableAdminEstimatePublicAccessToken,
+  fetchAdminEstimatePdf,
   getAdminEstimateDetails,
+  regenerateAdminEstimatePublicAccessToken,
   updateAdminEstimateNotes,
   updateAdminEstimateStatus,
 } from "../../services/adminEstimateService";
@@ -59,6 +62,7 @@ export function AdminEstimateDetailsPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [statusFeedback, setStatusFeedback] = useState("");
   const [notesFeedback, setNotesFeedback] = useState("");
+  const [publicAccessFeedback, setPublicAccessFeedback] = useState("");
 
   const loadEstimate = useCallback(async () => {
     if (!id) {
@@ -131,6 +135,103 @@ export function AdminEstimateDetailsPage() {
       setErrorMessage("");
     } catch (error) {
       setErrorMessage(getSafeApiErrorMessage(error, "Unable to save internal notes."));
+    } finally {
+      setIsActionBusy(false);
+    }
+  }
+
+  function getPdfFilename(currentEstimate: EstimateDetails) {
+    const safeEstimateNumber = currentEstimate.estimateNumber.replace(/[^A-Za-z0-9-]/g, "");
+
+    return `RRDS-Preliminary-Estimate-${safeEstimateNumber || "ESTIMATE"}.pdf`;
+  }
+
+  async function handleAdminPdf(mode: "download" | "inline") {
+    const currentEstimate = estimate;
+
+    if (!id || !currentEstimate) {
+      return;
+    }
+
+    setIsActionBusy(true);
+    setPublicAccessFeedback("");
+
+    try {
+      const blob = await fetchAdminEstimatePdf(id, mode);
+      const url = URL.createObjectURL(blob);
+
+      if (mode === "inline") {
+        window.open(url, "_blank", "noopener,noreferrer");
+        window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      } else {
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = getPdfFilename(currentEstimate);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      setErrorMessage("");
+    } catch (error) {
+      setErrorMessage(getSafeApiErrorMessage(error, "Unable to load estimate PDF."));
+    } finally {
+      setIsActionBusy(false);
+    }
+  }
+
+  async function handleCopyPublicLink() {
+    const publicUrl = estimate?.publicAccess.publicUrl;
+
+    if (!publicUrl) {
+      setPublicAccessFeedback("Regenerate public access to create a copyable client link.");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+      setPublicAccessFeedback("Public estimate link copied.");
+    } catch {
+      setPublicAccessFeedback("Unable to copy link from this browser.");
+    }
+  }
+
+  async function handleRegeneratePublicAccess() {
+    if (!id) {
+      return;
+    }
+
+    setIsActionBusy(true);
+    setPublicAccessFeedback("");
+
+    try {
+      await regenerateAdminEstimatePublicAccessToken(id);
+      await loadEstimate();
+      setPublicAccessFeedback("Public access token regenerated. Previous links are now invalid.");
+      setErrorMessage("");
+    } catch (error) {
+      setErrorMessage(getSafeApiErrorMessage(error, "Unable to regenerate public access."));
+    } finally {
+      setIsActionBusy(false);
+    }
+  }
+
+  async function handleDisablePublicAccess() {
+    if (!id) {
+      return;
+    }
+
+    setIsActionBusy(true);
+    setPublicAccessFeedback("");
+
+    try {
+      await disableAdminEstimatePublicAccessToken(id);
+      await loadEstimate();
+      setPublicAccessFeedback("Public access disabled.");
+      setErrorMessage("");
+    } catch (error) {
+      setErrorMessage(getSafeApiErrorMessage(error, "Unable to disable public access."));
     } finally {
       setIsActionBusy(false);
     }
@@ -248,6 +349,82 @@ export function AdminEstimateDetailsPage() {
         </div>
 
         <div className="space-y-5">
+          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-base font-bold text-slate-950">Client estimate access</h2>
+            <dl className="mt-4 grid gap-4">
+              <DetailItem
+                label="Public access"
+                value={estimate.publicAccess.enabled ? "Enabled" : "Disabled"}
+              />
+              <DetailItem label="Token created" value={formatDate(estimate.publicAccess.createdAt)} />
+              <DetailItem label="Valid until" value={formatDate(estimate.publicAccess.expiresAt)} />
+              <DetailItem
+                label="Last accessed"
+                value={formatDate(estimate.publicAccess.lastAccessedAt)}
+              />
+            </dl>
+
+            <div className="mt-5 grid gap-3">
+              <button
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-blue-700 bg-white px-4 text-sm font-semibold text-blue-800 transition hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-700 disabled:cursor-not-allowed disabled:border-slate-300 disabled:text-slate-400"
+                disabled={isActionBusy || !estimate.publicAccess.publicUrl}
+                onClick={() => window.open(estimate.publicAccess.publicUrl ?? "", "_blank", "noopener,noreferrer")}
+                type="button"
+              >
+                <ExternalLink aria-hidden="true" className="h-4 w-4" />
+                View client estimate
+              </button>
+              <button
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-blue-700 bg-white px-4 text-sm font-semibold text-blue-800 transition hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-700 disabled:cursor-not-allowed disabled:border-slate-300 disabled:text-slate-400"
+                disabled={isActionBusy || !estimate.publicAccess.publicUrl}
+                onClick={() => void handleCopyPublicLink()}
+                type="button"
+              >
+                <Copy aria-hidden="true" className="h-4 w-4" />
+                Copy public estimate link
+              </button>
+              <button
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-blue-700 bg-white px-4 text-sm font-semibold text-blue-800 transition hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-700 disabled:cursor-not-allowed disabled:border-slate-300 disabled:text-slate-400"
+                disabled={isActionBusy}
+                onClick={() => void handleAdminPdf("inline")}
+                type="button"
+              >
+                <ExternalLink aria-hidden="true" className="h-4 w-4" />
+                Preview watermarked PDF
+              </button>
+              <button
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-blue-700 px-4 text-sm font-semibold text-white transition hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                disabled={isActionBusy}
+                onClick={() => void handleAdminPdf("download")}
+                type="button"
+              >
+                <Download aria-hidden="true" className="h-4 w-4" />
+                Download watermarked estimate PDF
+              </button>
+              <button
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400 disabled:cursor-not-allowed disabled:text-slate-400"
+                disabled={isActionBusy}
+                onClick={() => void handleRegeneratePublicAccess()}
+                type="button"
+              >
+                <RefreshCw aria-hidden="true" className="h-4 w-4" />
+                Regenerate public access token
+              </button>
+              <button
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-red-300 bg-white px-4 text-sm font-semibold text-red-700 transition hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:cursor-not-allowed disabled:text-slate-400"
+                disabled={isActionBusy || !estimate.publicAccess.enabled}
+                onClick={() => void handleDisablePublicAccess()}
+                type="button"
+              >
+                <Ban aria-hidden="true" className="h-4 w-4" />
+                Disable public access
+              </button>
+            </div>
+            {publicAccessFeedback ? (
+              <p className="mt-3 text-sm font-medium text-emerald-700">{publicAccessFeedback}</p>
+            ) : null}
+          </section>
+
           <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-base font-bold text-slate-950">Status</h2>
             <div className="mt-4 flex flex-col gap-3 sm:flex-row">

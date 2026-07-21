@@ -5,10 +5,20 @@ import {
   updateEstimateRequestNotes,
   updateEstimateRequestStatus,
 } from "../services/estimateService";
+import {
+  disableEstimatePublicAccessToken,
+  getAdminEstimateDocumentById,
+  regenerateEstimatePublicAccessToken,
+} from "../services/estimateAccessService";
+import {
+  getEstimatePdfFilename,
+  renderEstimatePdf,
+} from "../services/estimatePdfService";
 import { errorResponse, successResponse } from "../utils/apiResponse";
 import {
   estimateIdParamSchema,
   estimateListQuerySchema,
+  pdfModeQuerySchema,
   updateEstimateNotesSchema,
   updateEstimateStatusSchema,
 } from "../validations/estimateSchemas";
@@ -88,4 +98,63 @@ export async function patchAdminEstimateNotes(req: Request, res: Response) {
   );
 
   res.json(successResponse("Internal notes updated", { estimate }));
+}
+
+export async function downloadAdminEstimatePdf(req: Request, res: Response) {
+  const estimateId = parseEstimateId(req, res);
+
+  if (!estimateId) {
+    return;
+  }
+
+  const parsedQuery = pdfModeQuerySchema.safeParse(req.query);
+
+  if (!parsedQuery.success) {
+    res.status(400).json(errorResponse("Invalid PDF mode."));
+    return;
+  }
+
+  const estimate = await getAdminEstimateDocumentById(estimateId);
+
+  try {
+    const pdf = await renderEstimatePdf(estimate);
+    const filename = getEstimatePdfFilename(estimate.estimateNumber);
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `${parsedQuery.data.mode === "inline" ? "inline" : "attachment"}; filename="${filename}"`,
+    );
+    res.send(pdf);
+  } catch (error) {
+    console.error(`PDF generation failed for estimate ${estimate.estimateNumber}.`, error);
+    res.status(500).json(errorResponse("Unable to generate estimate PDF."));
+  }
+}
+
+export async function postAdminEstimatePublicAccessToken(req: Request, res: Response) {
+  const estimateId = parseEstimateId(req, res);
+
+  if (!estimateId) {
+    return;
+  }
+
+  const publicAccess = await regenerateEstimatePublicAccessToken(
+    estimateId,
+    req.admin?.id ?? "unknown",
+  );
+
+  res.json(successResponse("Public estimate access token regenerated", { publicAccess }));
+}
+
+export async function deleteAdminEstimatePublicAccessToken(req: Request, res: Response) {
+  const estimateId = parseEstimateId(req, res);
+
+  if (!estimateId) {
+    return;
+  }
+
+  const publicAccess = await disableEstimatePublicAccessToken(estimateId);
+
+  res.json(successResponse("Public estimate access disabled", { publicAccess }));
 }

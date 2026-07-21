@@ -125,32 +125,40 @@ model Inquiry {
 }
 
 model EstimateRequest {
-  id                      String                @id @default(uuid())
-  estimateNumber          String                @unique
-  customerId              String
-  propertyType            String
-  serviceAddress          String
-  airconType              String
-  airconCapacity          String
-  quantity                Int
-  brand                   String?
-  unitCondition           String                @default("EXISTING")
-  indoorUnitLocation      String?
-  outdoorUnitLocation     String?
-  selectedService         String
-  preferredDate           DateTime?
-  notes                   String
-  urgencyLevel            String                @default("STANDARD")
-  estimatedSubtotal       Decimal               @default(0)
-  estimatedAdditionalFees Decimal               @default(0)
-  estimatedTax            Decimal               @default(0)
-  estimatedTotal          Decimal               @default(0)
-  internalNotes           String?
-  status                  EstimateRequestStatus @default(SUBMITTED)
-  createdAt               DateTime              @default(now())
-  updatedAt               DateTime              @updatedAt
-  customer                Customer              @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  quotation               Quotation?
+  id                         String                @id @default(uuid())
+  estimateNumber             String                @unique
+  customerId                 String
+  propertyType               String
+  serviceAddress             String
+  airconType                 String
+  airconCapacity             String
+  quantity                   Int
+  brand                      String?
+  unitCondition              String                @default("EXISTING")
+  indoorUnitLocation         String?
+  outdoorUnitLocation        String?
+  selectedService            String
+  preferredDate              DateTime?
+  notes                      String
+  urgencyLevel               String                @default("STANDARD")
+  estimatedSubtotal          Decimal               @default(0)
+  estimatedAdditionalFees    Decimal               @default(0)
+  estimatedTax               Decimal               @default(0)
+  estimatedTotal             Decimal               @default(0)
+  publicAccessTokenHash      String?               @unique
+  publicAccessTokenEncrypted String?
+  publicAccessTokenIv        String?
+  publicAccessTokenAuthTag   String?
+  publicAccessTokenExpiresAt DateTime?
+  publicAccessTokenCreatedAt DateTime?
+  publicAccessLastAccessedAt DateTime?
+  publicAccessDisabledAt     DateTime?
+  internalNotes              String?
+  status                     EstimateRequestStatus @default(SUBMITTED)
+  createdAt                  DateTime              @default(now())
+  updatedAt                  DateTime              @updatedAt
+  customer                   Customer              @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  quotation                  Quotation?
 
   @@index([customerId])
   @@index([propertyType])
@@ -158,6 +166,8 @@ model EstimateRequest {
   @@index([selectedService])
   @@index([preferredDate])
   @@index([status])
+  @@index([publicAccessTokenExpiresAt])
+  @@index([publicAccessDisabledAt])
   @@index([createdAt])
 }
 

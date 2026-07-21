@@ -2,6 +2,7 @@ import type { ApiResponse } from "../types/api";
 import type {
   AdminEstimateStatus,
   EstimateDetails,
+  EstimatePublicAccess,
   EstimateListFilters,
   EstimateListResponse,
 } from "../types/estimate";
@@ -62,4 +63,59 @@ export async function updateAdminEstimateNotes(id: string, internalNotes: string
   }
 
   return response.data.data.estimate;
+}
+
+export async function fetchAdminEstimatePdf(
+  id: string,
+  mode: "download" | "inline" = "download",
+) {
+  const response = await apiClient.get<Blob>(
+    `/admin/estimates/${encodeURIComponent(id)}/pdf`,
+    {
+      params: { mode },
+      responseType: "blob",
+    },
+  );
+
+  return response.data;
+}
+
+export async function regenerateAdminEstimatePublicAccessToken(id: string) {
+  const response = await apiClient.post<
+    ApiResponse<{
+      publicAccess: {
+        publicAccessToken: string;
+        publicUrl: string;
+        expiresAt: string;
+      };
+    }>
+  >(`/admin/estimates/${id}/public-access-token`);
+
+  if (!response.data.data) {
+    throw new Error("Missing public access token response data.");
+  }
+
+  return response.data.data.publicAccess;
+}
+
+export async function disableAdminEstimatePublicAccessToken(id: string) {
+  const response = await apiClient.delete<
+    ApiResponse<{ publicAccess: { estimateNumber: string; disabled: boolean } }>
+  >(`/admin/estimates/${id}/public-access-token`);
+
+  if (!response.data.data) {
+    throw new Error("Missing public access disable response data.");
+  }
+
+  return response.data.data.publicAccess;
+}
+
+export function mergePublicAccess(
+  current: EstimatePublicAccess,
+  update: Partial<EstimatePublicAccess>,
+) {
+  return {
+    ...current,
+    ...update,
+  };
 }

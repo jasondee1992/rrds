@@ -1,4 +1,14 @@
-import { AlertTriangle, ArrowLeft, ArrowRight, Home, Phone, RotateCcw, Send } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  Download,
+  Eye,
+  Home,
+  Phone,
+  RotateCcw,
+  Send,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -10,6 +20,7 @@ import { SecondaryButton } from "../../components/public/SecondaryButton";
 import { SectionTitle } from "../../components/public/SectionTitle";
 import { getSafeApiErrorMessage } from "../../services/apiError";
 import {
+  getPublicEstimatePdfUrl,
   getPublicEstimateOptions,
   submitPublicEstimate,
 } from "../../services/publicEstimateService";
@@ -277,6 +288,7 @@ export function FreeQuotationPage() {
                 <SummaryRow label="Selected service" value={result.selectedService} />
                 <SummaryRow label="Submission status" value={result.status.replace("_", " ")} />
                 <SummaryRow label="Generated date" value={formatDate(result.generatedDate)} />
+                <SummaryRow label="Valid until" value={formatDate(result.validUntil)} />
                 <SummaryRow label="Estimated subtotal" value={formatMoney(result.estimatedSubtotal)} />
                 <SummaryRow
                   label="Estimated additional fees"
@@ -295,6 +307,17 @@ export function FreeQuotationPage() {
                   <RotateCcw aria-hidden="true" className="h-4 w-4" />
                   Submit Another Estimate
                 </SecondaryButton>
+                <SecondaryButton className="gap-2" to={`/estimate/${result.publicAccessToken}`}>
+                  <Eye aria-hidden="true" className="h-4 w-4" />
+                  View Estimate
+                </SecondaryButton>
+                <a
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-blue-700 bg-white px-5 py-3 text-sm font-semibold text-blue-800 transition hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-700 focus:ring-offset-2"
+                  href={getPublicEstimatePdfUrl(result.publicAccessToken)}
+                >
+                  <Download aria-hidden="true" className="h-4 w-4" />
+                  Download Estimate PDF
+                </a>
                 <SecondaryButton className="gap-2" to="/contact">
                   <Phone aria-hidden="true" className="h-4 w-4" />
                   Contact RRDS

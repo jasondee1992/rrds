@@ -14,6 +14,7 @@ import { ContactPage } from "../pages/public/ContactPage";
 import { FreeQuotationPage } from "../pages/public/FreeQuotationPage";
 import { HomePage } from "../pages/public/HomePage";
 import { ProjectsPage } from "../pages/public/ProjectsPage";
+import { PublicEstimatePage } from "../pages/public/PublicEstimatePage";
 import { ServicesPage } from "../pages/public/ServicesPage";
 
 export function AppRoutes() {
@@ -25,6 +26,7 @@ export function AppRoutes() {
         <Route path="/services" element={<ServicesPage />} />
         <Route path="/projects" element={<ProjectsPage />} />
         <Route path="/free-quotation" element={<FreeQuotationPage />} />
+        <Route path="/estimate/:token" element={<PublicEstimatePage />} />
         <Route path="/contact" element={<ContactPage />} />
       </Route>
       <Route path="/admin/login" element={<AdminLoginPage />} />
