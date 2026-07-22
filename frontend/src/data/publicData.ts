@@ -17,6 +17,7 @@ import {
   Wrench,
   type LucideIcon,
 } from "lucide-react";
+import founderPlaceholder from "../assets/team/founder-placeholder.svg";
 
 export type NavigationLink = {
   label: string;
@@ -61,11 +62,55 @@ export type ContactDetail = {
   Icon: LucideIcon;
 };
 
+export type FounderProfile = {
+  name: string;
+  role: string;
+  experienceYears: string;
+  experienceBadge: string;
+  currentResponsibility: string;
+  image: string;
+  imageAlt: string;
+  shortBiography: string;
+  fullBiography: string[];
+  expertise: string[];
+};
+
 export const facebookPageUrl = "https://www.facebook.com/RRDSAirconServices";
 export const companyAddress =
   "#420 B Senator Neptali A. Gonzales St. Brgy. San Jose Sitio 4, Mandaluyong, Philippines, 1550";
 export const companyPhone = "0947 476 8214";
 export const companyEmail = "oneal101982@gmail.com";
+
+// Temporary founder profile content for public layout approval.
+// Replace this object when the real name, photo, experience, and biography are ready.
+export const founderProfile: FounderProfile = {
+  name: "Engr. Ramon Dela Cruz",
+  role: "Founder & Lead Air-Conditioning Technician",
+  experienceYears: "15+",
+  experienceBadge: "15+ Years of Air-Conditioning Experience",
+  currentResponsibility:
+    "Currently Handling Air-Conditioning Operations at Makati Palace Hotel",
+  image: founderPlaceholder,
+  imageAlt: "RRDS founder and lead air-conditioning technician",
+  shortBiography:
+    "RRDS is led by an experienced air-conditioning technician with more than 15 years of hands-on experience in residential and commercial systems. He currently handles the air-conditioning service and maintenance requirements of Makati Palace Hotel and personally oversees the technical quality of RRDS projects.",
+  fullBiography: [
+    "With more than 15 years of hands-on experience in the air-conditioning industry, our founder and lead technician has developed extensive knowledge in diagnosing, repairing, maintaining, and installing different types of air-conditioning systems.",
+    "He is experienced in handling window-type, split-type, floor-mounted, cassette, ceiling-mounted, centralized, and commercial air-conditioning units from various major brands.",
+    "He currently oversees and handles the air-conditioning service and maintenance requirements of Makati Palace Hotel, giving him extensive experience in managing both individual units and large-scale commercial air-conditioning operations.",
+    "His hands-on leadership ensures that every RRDS project is approached with proper technical assessment, reliable workmanship, and a strong commitment to customer satisfaction.",
+  ],
+  expertise: [
+    "Residential Air-Conditioning Systems",
+    "Commercial Air-Conditioning Systems",
+    "Installation and Replacement",
+    "Preventive Maintenance",
+    "Troubleshooting and Diagnostics",
+    "Aircon Repair",
+    "Cleaning and General Maintenance",
+    "Multi-Unit and Hotel Aircon Operations",
+  ],
+};
 
 export const navigationLinks: NavigationLink[] = [
   { label: "Home", path: "/" },

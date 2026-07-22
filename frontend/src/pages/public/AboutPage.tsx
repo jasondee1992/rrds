@@ -1,5 +1,6 @@
 import { CheckCircle2, Target, Telescope, UsersRound } from "lucide-react";
 import { ContactCTA } from "../../components/public/ContactCTA";
+import { FounderProfileSection } from "../../components/public/FounderProfileSection";
 import { SectionTitle } from "../../components/public/SectionTitle";
 import { benefits } from "../../data/publicData";
 
@@ -44,6 +45,8 @@ export function AboutPage() {
           </div>
         </div>
       </section>
+
+      <FounderProfileSection variant="full" />
 
       <section className="bg-slate-50 px-6 py-16 sm:py-20">
         <div className="mx-auto grid max-w-7xl gap-6 md:grid-cols-2">

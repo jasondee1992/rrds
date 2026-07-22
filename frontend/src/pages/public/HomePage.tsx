@@ -1,6 +1,7 @@
 import { Fan, Quote, Snowflake } from "lucide-react";
 import { BenefitCard } from "../../components/public/BenefitCard";
 import { ContactCTA } from "../../components/public/ContactCTA";
+import { FounderProfileSection } from "../../components/public/FounderProfileSection";
 import { ImagePlaceholder } from "../../components/public/ImagePlaceholder";
 import { PrimaryButton } from "../../components/public/PrimaryButton";
 import { ProjectCard } from "../../components/public/ProjectCard";
@@ -121,6 +122,8 @@ export function HomePage() {
           </div>
         </div>
       </section>
+
+      <FounderProfileSection variant="preview" />
 
       <section className="bg-slate-50 px-6 py-16 sm:py-20">
         <div className="mx-auto max-w-7xl">
