@@ -572,6 +572,13 @@ export async function convertEstimateToDraftQuotation(id: string, adminId: strin
             quotationNumber,
             customerId: estimate.customerId,
             estimateRequestId: estimate.id,
+            projectTitle: revision.serviceDescription,
+            customerFullName: estimate.customer.fullName,
+            customerCompanyName: estimate.customer.companyName,
+            customerEmail: estimate.customer.email,
+            customerMobileNumber: estimate.customer.mobileNumber,
+            billingAddress: estimate.customer.address,
+            serviceAddress: estimate.serviceAddress,
             quotationDate,
             validUntil,
             subtotal: revision.subtotal,
@@ -615,6 +622,31 @@ export async function convertEstimateToDraftQuotation(id: string, adminId: strin
             reviewedAt: quotationDate,
           },
           select: { id: true },
+        });
+
+        await tx.auditLog.createMany({
+          data: [
+            {
+              adminId,
+              action: "ESTIMATE_CONVERTED",
+              entityType: "EstimateRequest",
+              entityId: estimate.id,
+              entityReference: estimate.estimateNumber,
+              metadata: JSON.stringify({
+                quotationNumber: quotation.quotationNumber,
+              }),
+            },
+            {
+              adminId,
+              action: "DRAFT_QUOTATION_CREATED",
+              entityType: "Quotation",
+              entityId: quotation.id,
+              entityReference: quotation.quotationNumber,
+              metadata: JSON.stringify({
+                estimateNumber: estimate.estimateNumber,
+              }),
+            },
+          ],
         });
 
         return {

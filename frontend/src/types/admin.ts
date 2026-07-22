@@ -52,6 +52,8 @@ export type AdminDashboardSummary = {
   pendingEstimateReviews: number;
   convertedEstimates: number;
   draftQuotations: number;
+  readyQuotations: number;
+  cancelledQuotations: number;
   sentQuotations: number;
   acceptedQuotations: number;
   recentInquiries: RecentInquiry[];

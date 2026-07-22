@@ -42,6 +42,7 @@ export function AppRoutes() {
           <Route path="estimates/:id" element={<AdminEstimateDetailsPage />} />
           <Route path="estimate-requests" element={<Navigate to="/admin/estimates" replace />} />
           <Route path="quotations" element={<AdminQuotationsPage />} />
+          <Route path="quotations/new" element={<AdminQuotationDetailsPage />} />
           <Route path="quotations/:id" element={<AdminQuotationDetailsPage />} />
           <Route path="customers" element={<AdminPlaceholderPage title="Customers" />} />
           <Route path="services" element={<AdminPlaceholderPage title="Services" />} />

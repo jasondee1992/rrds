@@ -107,6 +107,8 @@ export function AdminDashboardPage() {
     { label: "Active Estimates", value: summary.pendingEstimates, Icon: ClipboardList },
     { label: "Converted Estimates", value: summary.convertedEstimates, Icon: FileCheck2 },
     { label: "Draft Quotations", value: summary.draftQuotations, Icon: FileText },
+    { label: "Ready Quotations", value: summary.readyQuotations, Icon: FileCheck2 },
+    { label: "Cancelled Quotations", value: summary.cancelledQuotations, Icon: FileClock },
     { label: "Sent Quotations", value: summary.sentQuotations, Icon: Send },
     { label: "Accepted Quotations", value: summary.acceptedQuotations, Icon: FileCheck2 },
   ];

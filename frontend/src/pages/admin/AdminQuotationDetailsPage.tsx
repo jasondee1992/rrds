@@ -1,65 +1,455 @@
-import { AlertTriangle, ArrowLeft } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import {
+  ArrowDown,
+  ArrowLeft,
+  ArrowUp,
+  Copy,
+  Plus,
+  Save,
+  Trash2,
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useState, type MouseEvent } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { getSafeApiErrorMessage } from "../../services/apiError";
-import { getAdminQuotationDetails } from "../../services/adminQuotationService";
-import type { QuotationDetails } from "../../types/quotation";
+import {
+  createAdminQuotation,
+  duplicateAdminQuotation,
+  getAdminQuotationCustomers,
+  getAdminQuotationDefaults,
+  getAdminQuotationDetails,
+  updateAdminQuotation,
+  updateAdminQuotationStatus,
+} from "../../services/adminQuotationService";
+import type {
+  QuotationCustomerOption,
+  QuotationDetails,
+  QuotationItemType,
+  QuotationPayload,
+  QuotationUpdatePayload,
+} from "../../types/quotation";
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(value));
+const itemTypes: QuotationItemType[] = [
+  "PRODUCT",
+  "SERVICE",
+  "LABOR",
+  "MATERIAL",
+  "TRANSPORTATION",
+  "OTHER",
+];
+
+type ItemForm = {
+  id?: string;
+  localId: string;
+  itemType: QuotationItemType;
+  description: string;
+  quantity: string;
+  unit: string;
+  unitPrice: string;
+  discount: string;
+};
+
+type EditorForm = {
+  customerMode: "existing" | "new";
+  customerId: string;
+  updateMasterCustomer: boolean;
+  fullName: string;
+  companyName: string;
+  email: string;
+  mobileNumber: string;
+  billingAddress: string;
+  serviceAddress: string;
+  city: string;
+  province: string;
+  projectTitle: string;
+  quotationDate: string;
+  validUntil: string;
+  discount: string;
+  additionalFees: string;
+  taxRate: string;
+  scopeOfWork: string;
+  exclusions: string;
+  paymentTerms: string;
+  warrantyTerms: string;
+  notes: string;
+  items: ItemForm[];
+};
+
+const emptyItem = (): ItemForm => ({
+  localId: crypto.randomUUID(),
+  itemType: "SERVICE",
+  description: "",
+  quantity: "1",
+  unit: "service",
+  unitPrice: "0.00",
+  discount: "0.00",
+});
+
+const defaultForm: EditorForm = {
+  customerMode: "new",
+  customerId: "",
+  updateMasterCustomer: false,
+  fullName: "",
+  companyName: "",
+  email: "",
+  mobileNumber: "",
+  billingAddress: "",
+  serviceAddress: "",
+  city: "",
+  province: "",
+  projectTitle: "",
+  quotationDate: new Date().toISOString().slice(0, 10),
+  validUntil: new Date().toISOString().slice(0, 10),
+  discount: "0.00",
+  additionalFees: "0.00",
+  taxRate: "0.00",
+  scopeOfWork: "",
+  exclusions: "",
+  paymentTerms: "",
+  warrantyTerms: "",
+  notes: "",
+  items: [emptyItem()],
+};
+
+function formatDateInput(value: string) {
+  return value ? new Date(value).toISOString().slice(0, 10) : "";
 }
 
-function formatMoney(value: string) {
+function formatMoney(value: string | number) {
   return new Intl.NumberFormat("en-PH", {
     style: "currency",
     currency: "PHP",
   }).format(Number(value));
 }
 
-function DetailItem({ label, value }: { label: string; value?: string | number | null }) {
-  return (
-    <div>
-      <dt className="text-xs font-bold uppercase text-slate-500">{label}</dt>
-      <dd className="mt-1 break-words text-sm font-medium text-slate-900">
-        {value || "Not provided"}
-      </dd>
-    </div>
+function toNumber(value: string) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function buildFormFromQuotation(quotation: QuotationDetails): EditorForm {
+  return {
+    customerMode: "existing",
+    customerId: quotation.customer.id,
+    updateMasterCustomer: false,
+    fullName: quotation.customerFullName,
+    companyName: quotation.customerCompanyName ?? "",
+    email: quotation.customerEmail,
+    mobileNumber: quotation.customerMobileNumber,
+    billingAddress: quotation.billingAddress,
+    serviceAddress: quotation.serviceAddress,
+    city: quotation.customer.city,
+    province: quotation.customer.province,
+    projectTitle: quotation.projectTitle,
+    quotationDate: formatDateInput(quotation.quotationDate),
+    validUntil: formatDateInput(quotation.validUntil),
+    discount: quotation.discount,
+    additionalFees: quotation.additionalFees,
+    taxRate: quotation.taxRate,
+    scopeOfWork: quotation.scopeOfWork,
+    exclusions: quotation.exclusions,
+    paymentTerms: quotation.paymentTerms,
+    warrantyTerms: quotation.warrantyTerms,
+    notes: quotation.notes,
+    items: quotation.items.map((item) => ({
+      id: item.id,
+      localId: item.id,
+      itemType: item.itemType,
+      description: item.description,
+      quantity: item.quantity,
+      unit: item.unit,
+      unitPrice: item.unitPrice,
+      discount: item.discount,
+    })),
+  };
+}
+
+function calculatePreview(form: EditorForm) {
+  const itemRows = form.items.map((item) => {
+    const gross = toNumber(item.quantity) * toNumber(item.unitPrice);
+    const amount = Math.max(gross - toNumber(item.discount), 0);
+    return { gross, amount };
+  });
+  const itemsSubtotal = itemRows.reduce((total, item) => total + item.amount, 0);
+  const taxableSubtotal = Math.max(
+    itemsSubtotal - toNumber(form.discount) + toNumber(form.additionalFees),
+    0,
   );
+  const taxAmount = taxableSubtotal * (toNumber(form.taxRate) / 100);
+
+  return {
+    itemRows,
+    itemsSubtotal,
+    taxableSubtotal,
+    taxAmount,
+    grandTotal: taxableSubtotal + taxAmount,
+  };
 }
 
 export function AdminQuotationDetailsPage() {
   const { id } = useParams<{ id: string }>();
+  const isNew = id === "new";
+  const navigate = useNavigate();
   const [quotation, setQuotation] = useState<QuotationDetails | null>(null);
+  const [customers, setCustomers] = useState<QuotationCustomerOption[]>([]);
+  const [form, setForm] = useState<EditorForm>(defaultForm);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [feedback, setFeedback] = useState("");
+  const [isDirty, setIsDirty] = useState(false);
 
-  const loadQuotation = useCallback(async () => {
-    if (!id) {
-      setErrorMessage("Invalid quotation ID.");
-      setIsLoading(false);
-      return;
-    }
+  const preview = useMemo(() => calculatePreview(form), [form]);
+  const isCancelled = quotation?.status === "CANCELLED";
+  const canSave = isNew || quotation?.status === "DRAFT" || quotation?.status === "READY";
 
+  const loadEditor = useCallback(async () => {
     setIsLoading(true);
 
     try {
-      const result = await getAdminQuotationDetails(id);
-      setQuotation(result);
+      const [customerOptions, defaults] = await Promise.all([
+        getAdminQuotationCustomers(),
+        getAdminQuotationDefaults(),
+      ]);
+      setCustomers(customerOptions);
+
+      if (isNew) {
+        setQuotation(null);
+        setForm({
+          ...defaultForm,
+          quotationDate: formatDateInput(defaults.quotationDate),
+          validUntil: formatDateInput(defaults.validUntil),
+          taxRate: defaults.taxRate,
+          scopeOfWork: defaults.scopeOfWork,
+          exclusions: defaults.exclusions,
+          paymentTerms: defaults.paymentTerms,
+          warrantyTerms: defaults.warrantyTerms,
+          notes: defaults.notes,
+          items: [emptyItem()],
+        });
+      } else if (id) {
+        const result = await getAdminQuotationDetails(id);
+        setQuotation(result);
+        setForm(buildFormFromQuotation(result));
+      }
+
       setErrorMessage("");
+      setIsDirty(false);
     } catch (error) {
-      setErrorMessage(getSafeApiErrorMessage(error, "Unable to load quotation details."));
+      setErrorMessage(getSafeApiErrorMessage(error, "Unable to load quotation editor."));
     } finally {
       setIsLoading(false);
     }
-  }, [id]);
+  }, [id, isNew]);
 
   useEffect(() => {
-    void loadQuotation();
-  }, [loadQuotation]);
+    void loadEditor();
+  }, [loadEditor]);
+
+  useEffect(() => {
+    function warnBeforeUnload(event: BeforeUnloadEvent) {
+      if (!isDirty) {
+        return;
+      }
+
+      event.preventDefault();
+      event.returnValue = "";
+    }
+
+    window.addEventListener("beforeunload", warnBeforeUnload);
+    return () => window.removeEventListener("beforeunload", warnBeforeUnload);
+  }, [isDirty]);
+
+  function updateField<K extends keyof EditorForm>(key: K, value: EditorForm[K]) {
+    setForm((current) => ({ ...current, [key]: value }));
+    setIsDirty(true);
+  }
+
+  function updateItem(localId: string, patch: Partial<ItemForm>) {
+    setForm((current) => ({
+      ...current,
+      items: current.items.map((item) =>
+        item.localId === localId ? { ...item, ...patch } : item,
+      ),
+    }));
+    setIsDirty(true);
+  }
+
+  function selectCustomer(customerId: string) {
+    const customer = customers.find((item) => item.id === customerId);
+    updateField("customerId", customerId);
+
+    if (customer) {
+      setForm((current) => ({
+        ...current,
+        customerMode: "existing",
+        customerId,
+        fullName: customer.fullName,
+        companyName: customer.companyName ?? "",
+        email: customer.email,
+        mobileNumber: customer.mobileNumber,
+        billingAddress: customer.address,
+        serviceAddress: current.serviceAddress || customer.address,
+        city: customer.city,
+        province: customer.province,
+      }));
+      setIsDirty(true);
+    }
+  }
+
+  function addItem() {
+    updateField("items", [...form.items, emptyItem()]);
+  }
+
+  function duplicateItem(localId: string) {
+    const item = form.items.find((current) => current.localId === localId);
+    if (!item) return;
+    updateField("items", [
+      ...form.items,
+      { ...item, id: undefined, localId: crypto.randomUUID() },
+    ]);
+  }
+
+  function removeItem(localId: string) {
+    if (form.items.length <= 1 || !window.confirm("Remove this quotation item?")) {
+      return;
+    }
+    updateField("items", form.items.filter((item) => item.localId !== localId));
+  }
+
+  function moveItem(localId: string, direction: -1 | 1) {
+    const index = form.items.findIndex((item) => item.localId === localId);
+    const target = index + direction;
+    if (index < 0 || target < 0 || target >= form.items.length) return;
+    const nextItems = [...form.items];
+    const [item] = nextItems.splice(index, 1);
+    nextItems.splice(target, 0, item);
+    updateField("items", nextItems);
+  }
+
+  function buildPayload(): QuotationPayload {
+    return {
+      customer: {
+        mode: form.customerMode,
+        customerId: form.customerMode === "existing" ? form.customerId : undefined,
+        updateMasterCustomer: form.updateMasterCustomer,
+        fullName: form.fullName,
+        companyName: form.companyName || undefined,
+        email: form.email,
+        mobileNumber: form.mobileNumber,
+        billingAddress: form.billingAddress,
+        serviceAddress: form.serviceAddress,
+        city: form.city || undefined,
+        province: form.province || undefined,
+      },
+      projectTitle: form.projectTitle,
+      quotationDate: form.quotationDate,
+      validUntil: form.validUntil,
+      approvedById: null,
+      discount: toNumber(form.discount),
+      additionalFees: toNumber(form.additionalFees),
+      taxRate: toNumber(form.taxRate),
+      scopeOfWork: form.scopeOfWork,
+      exclusions: form.exclusions,
+      paymentTerms: form.paymentTerms,
+      warrantyTerms: form.warrantyTerms,
+      notes: form.notes,
+      items: form.items.map((item, index) => ({
+        id: item.id,
+        itemType: item.itemType,
+        description: item.description,
+        quantity: toNumber(item.quantity),
+        unit: item.unit,
+        unitPrice: toNumber(item.unitPrice),
+        discount: toNumber(item.discount),
+        sortOrder: index + 1,
+      })),
+    };
+  }
+
+  async function handleSave() {
+    if (!canSave || isCancelled) {
+      return;
+    }
+
+    setIsSaving(true);
+    setFeedback("");
+
+    try {
+      if (isNew) {
+        const created = await createAdminQuotation(buildPayload());
+        setIsDirty(false);
+        navigate(`/admin/quotations/${created.id}`);
+        return;
+      }
+
+      if (!quotation || !id) {
+        return;
+      }
+
+      const payload: QuotationUpdatePayload = {
+        ...buildPayload(),
+        updatedAt: quotation.updatedAt,
+      };
+      const saved = await updateAdminQuotation(id, payload);
+      setQuotation(saved);
+      setForm(buildFormFromQuotation(saved));
+      setIsDirty(false);
+      setFeedback("Draft saved.");
+      setErrorMessage("");
+    } catch (error) {
+      setErrorMessage(getSafeApiErrorMessage(error, "Unable to save quotation."));
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleStatus(status: "DRAFT" | "READY" | "CANCELLED") {
+    if (!quotation || !id) {
+      return;
+    }
+
+    if (status === "CANCELLED" && !window.confirm("Cancel this quotation?")) {
+      return;
+    }
+
+    setIsSaving(true);
+    setFeedback("");
+
+    try {
+      await updateAdminQuotationStatus(id, status, quotation.updatedAt);
+      await loadEditor();
+      setFeedback(`Quotation status changed to ${status}.`);
+    } catch (error) {
+      setErrorMessage(getSafeApiErrorMessage(error, "Unable to update quotation status."));
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleDuplicate() {
+    if (!quotation || !id) {
+      return;
+    }
+
+    setIsSaving(true);
+    setFeedback("");
+
+    try {
+      const duplicate = await duplicateAdminQuotation(id);
+      setIsDirty(false);
+      navigate(`/admin/quotations/${duplicate.id}`);
+    } catch (error) {
+      setErrorMessage(getSafeApiErrorMessage(error, "Unable to duplicate quotation."));
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  function confirmBack(event: MouseEvent<HTMLAnchorElement>) {
+    if (!isDirty) return;
+    if (!window.confirm("You have unsaved changes. Leave this quotation?")) {
+      event.preventDefault();
+    }
+  }
 
   if (isLoading) {
     return (
@@ -73,148 +463,366 @@ export function AdminQuotationDetailsPage() {
     );
   }
 
-  if (errorMessage || !quotation) {
-    return (
-      <section className="rounded-lg border border-red-200 bg-red-50 p-6 text-red-800">
-        <h2 className="text-lg font-bold">Quotation unavailable</h2>
-        <p className="mt-2 text-sm font-medium">
-          {errorMessage || "Unable to load quotation details."}
-        </p>
-        <Link className="mt-5 inline-flex text-sm font-bold text-red-900 underline" to="/admin/quotations">
-          Back to quotations
-        </Link>
-      </section>
-    );
-  }
-
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 pb-24">
       <Link
         className="inline-flex items-center gap-2 text-sm font-bold text-blue-800 hover:text-blue-900"
+        onClick={confirmBack}
         to="/admin/quotations"
       >
         <ArrowLeft aria-hidden="true" className="h-4 w-4" />
         Back to quotations
       </Link>
 
-      <section className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-950">
-        <div className="flex gap-3">
-          <AlertTriangle aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
-          <p className="text-sm font-bold">
-            DRAFT - NOT YET AN OFFICIAL OR APPROVED QUOTATION
-          </p>
-        </div>
-      </section>
+      {errorMessage ? (
+        <section className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-800">
+          {errorMessage}
+        </section>
+      ) : null}
+
+      {feedback ? (
+        <section className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-800">
+          {feedback}
+        </section>
+      ) : null}
 
       <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div>
-            <p className="text-sm font-bold text-blue-700">{quotation.quotationNumber}</p>
+            <p className="text-sm font-bold text-blue-700">
+              {isNew ? "New quotation" : quotation?.quotationNumber}
+            </p>
             <h2 className="mt-2 text-2xl font-bold text-slate-950">
-              Draft Quotation
+              {form.projectTitle || "Quotation Editor"}
             </h2>
             <p className="mt-2 text-sm text-slate-600">
-              Created {formatDate(quotation.createdAt)}. Valid until {formatDate(quotation.validUntil)}.
+              Status: {quotation?.status ?? "DRAFT"}{" "}
+              {quotation?.estimateRequest ? `- Reference ${quotation.estimateRequest.estimateNumber}` : ""}
             </p>
           </div>
-          <span className="rounded-md bg-blue-50 px-3 py-2 text-sm font-bold text-blue-700">
-            {quotation.status}
-          </span>
+          <div className="flex flex-wrap gap-2">
+            <button
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-blue-700 px-4 text-sm font-semibold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+              disabled={isSaving || isCancelled || !canSave}
+              onClick={() => void handleSave()}
+              type="button"
+            >
+              <Save aria-hidden="true" className="h-4 w-4" />
+              Save Draft
+            </button>
+            {!isNew && quotation?.status === "DRAFT" ? (
+              <button
+                className="rounded-md border border-emerald-600 px-4 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                disabled={isSaving}
+                onClick={() => void handleStatus("READY")}
+                type="button"
+              >
+                Mark Ready
+              </button>
+            ) : null}
+            {!isNew && quotation?.status === "READY" ? (
+              <button
+                className="rounded-md border border-blue-700 px-4 text-sm font-semibold text-blue-800 hover:bg-blue-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                disabled={isSaving}
+                onClick={() => void handleStatus("DRAFT")}
+                type="button"
+              >
+                Return to Draft
+              </button>
+            ) : null}
+            {!isNew ? (
+              <button
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                disabled={isSaving || isCancelled}
+                onClick={() => void handleDuplicate()}
+                type="button"
+              >
+                <Copy aria-hidden="true" className="h-4 w-4" />
+                Duplicate
+              </button>
+            ) : null}
+            {!isNew && quotation?.status !== "CANCELLED" ? (
+              <button
+                className="rounded-md border border-red-300 px-4 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                disabled={isSaving}
+                onClick={() => void handleStatus("CANCELLED")}
+                type="button"
+              >
+                Cancel Quotation
+              </button>
+            ) : null}
+          </div>
         </div>
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[1fr_0.8fr]">
+      <section className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
         <div className="space-y-5">
           <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-base font-bold text-slate-950">Customer and reference</h2>
-            <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-              <DetailItem label="Customer" value={quotation.customer.fullName} />
-              <DetailItem label="Company" value={quotation.customer.companyName} />
-              <DetailItem label="Email" value={quotation.customer.email} />
-              <DetailItem label="Mobile" value={quotation.customer.mobileNumber} />
-              <DetailItem label="Billing address" value={quotation.customer.address} />
-              <DetailItem label="Service address" value={quotation.estimateRequest?.serviceAddress} />
-              <DetailItem label="Reference estimate" value={quotation.estimateRequest?.estimateNumber} />
-              <DetailItem label="Selected service" value={quotation.estimateRequest?.selectedService} />
-              <DetailItem label="Prepared by" value={quotation.preparedBy.fullName} />
-              <DetailItem label="Quotation date" value={formatDate(quotation.quotationDate)} />
-            </dl>
+            <h2 className="text-base font-bold text-slate-950">Customer information</h2>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <label className="text-sm font-semibold text-slate-800">
+                Customer mode
+                <select
+                  className="mt-2 min-h-10 w-full rounded-md border border-slate-300 px-3 text-sm"
+                  disabled={isSaving || isCancelled}
+                  onChange={(event) => updateField("customerMode", event.target.value as "existing" | "new")}
+                  value={form.customerMode}
+                >
+                  <option value="existing">Existing customer</option>
+                  <option value="new">New customer</option>
+                </select>
+              </label>
+              {form.customerMode === "existing" ? (
+                <label className="text-sm font-semibold text-slate-800">
+                  Select customer
+                  <select
+                    className="mt-2 min-h-10 w-full rounded-md border border-slate-300 px-3 text-sm"
+                    disabled={isSaving || isCancelled}
+                    onChange={(event) => selectCustomer(event.target.value)}
+                    value={form.customerId}
+                  >
+                    <option value="">Select customer</option>
+                    {customers.map((customer) => (
+                      <option key={customer.id} value={customer.id}>
+                        {customer.fullName} - {customer.email}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+              {[
+                ["fullName", "Full name"],
+                ["companyName", "Company name"],
+                ["email", "Email"],
+                ["mobileNumber", "Mobile number"],
+                ["billingAddress", "Billing address"],
+                ["serviceAddress", "Service address"],
+                ["city", "City"],
+                ["province", "Province"],
+              ].map(([key, label]) => (
+                <label className="text-sm font-semibold text-slate-800" key={key}>
+                  {label}
+                  <input
+                    className="mt-2 min-h-10 w-full rounded-md border border-slate-300 px-3 text-sm"
+                    disabled={isSaving || isCancelled}
+                    onChange={(event) =>
+                      updateField(key as keyof EditorForm, event.target.value as never)
+                    }
+                    value={String(form[key as keyof EditorForm] ?? "")}
+                  />
+                </label>
+              ))}
+              {form.customerMode === "existing" ? (
+                <label className="flex items-center gap-3 rounded-md border border-slate-200 bg-slate-50 p-3 text-sm font-semibold text-slate-800 sm:col-span-2">
+                  <input
+                    checked={form.updateMasterCustomer}
+                    disabled={isSaving || isCancelled}
+                    onChange={(event) => updateField("updateMasterCustomer", event.target.checked)}
+                    type="checkbox"
+                  />
+                  Also update the master customer record
+                </label>
+              ) : null}
+            </div>
           </section>
 
-          <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-slate-200 p-5">
-              <h2 className="text-base font-bold text-slate-950">Quotation items</h2>
+          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-base font-bold text-slate-950">Quotation information</h2>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <label className="text-sm font-semibold text-slate-800">
+                Project title
+                <input
+                  className="mt-2 min-h-10 w-full rounded-md border border-slate-300 px-3 text-sm"
+                  disabled={isSaving || isCancelled}
+                  onChange={(event) => updateField("projectTitle", event.target.value)}
+                  value={form.projectTitle}
+                />
+              </label>
+              <label className="text-sm font-semibold text-slate-800">
+                Quotation date
+                <input
+                  className="mt-2 min-h-10 w-full rounded-md border border-slate-300 px-3 text-sm"
+                  disabled={isSaving || isCancelled}
+                  onChange={(event) => updateField("quotationDate", event.target.value)}
+                  type="date"
+                  value={form.quotationDate}
+                />
+              </label>
+              <label className="text-sm font-semibold text-slate-800">
+                Valid until
+                <input
+                  className="mt-2 min-h-10 w-full rounded-md border border-slate-300 px-3 text-sm"
+                  disabled={isSaving || isCancelled}
+                  onChange={(event) => updateField("validUntil", event.target.value)}
+                  type="date"
+                  value={form.validUntil}
+                />
+              </label>
+              <div className="text-sm font-semibold text-slate-800">
+                Prepared by
+                <p className="mt-2 rounded-md bg-slate-50 px-3 py-2 text-slate-700">
+                  {quotation?.preparedBy.fullName ?? "Current admin"}
+                </p>
+              </div>
             </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-slate-50 text-left text-xs font-bold uppercase text-slate-500">
-                  <tr>
-                    <th className="px-4 py-3">Description</th>
-                    <th className="px-4 py-3">Type</th>
-                    <th className="px-4 py-3">Qty</th>
-                    <th className="px-4 py-3">Unit price</th>
-                    <th className="px-4 py-3">Amount</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {quotation.items.map((item) => (
-                    <tr key={item.id}>
-                      <td className="px-4 py-3 font-medium text-slate-950">{item.description}</td>
-                      <td className="px-4 py-3 text-slate-700">{item.itemType}</td>
-                      <td className="px-4 py-3 text-slate-700">
-                        {Number(item.quantity).toLocaleString()} {item.unit}
-                      </td>
-                      <td className="px-4 py-3 text-slate-700">{formatMoney(item.unitPrice)}</td>
-                      <td className="px-4 py-3 font-semibold text-slate-950">
-                        {formatMoney(item.amount)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          </section>
+
+          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-base font-bold text-slate-950">Quotation items</h2>
+              <button
+                className="inline-flex min-h-10 items-center gap-2 rounded-md bg-blue-700 px-4 text-sm font-semibold text-white hover:bg-blue-800"
+                disabled={isSaving || isCancelled}
+                onClick={addItem}
+                type="button"
+              >
+                <Plus aria-hidden="true" className="h-4 w-4" />
+                Add item
+              </button>
+            </div>
+            <div className="mt-4 space-y-4">
+              {form.items.map((item, index) => (
+                <div key={item.localId} className="rounded-md border border-slate-200 p-4">
+                  <div className="grid gap-3 lg:grid-cols-[140px_1fr_90px_90px_120px_110px_120px]">
+                    <select
+                      className="min-h-10 rounded-md border border-slate-300 px-2 text-sm"
+                      disabled={isSaving || isCancelled}
+                      onChange={(event) => updateItem(item.localId, { itemType: event.target.value as QuotationItemType })}
+                      value={item.itemType}
+                    >
+                      {itemTypes.map((type) => (
+                        <option key={type} value={type}>
+                          {type}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      className="min-h-10 rounded-md border border-slate-300 px-3 text-sm"
+                      disabled={isSaving || isCancelled}
+                      onChange={(event) => updateItem(item.localId, { description: event.target.value })}
+                      placeholder="Description"
+                      value={item.description}
+                    />
+                    <input
+                      className="min-h-10 rounded-md border border-slate-300 px-3 text-sm"
+                      disabled={isSaving || isCancelled}
+                      min={0}
+                      onChange={(event) => updateItem(item.localId, { quantity: event.target.value })}
+                      step="0.01"
+                      type="number"
+                      value={item.quantity}
+                    />
+                    <input
+                      className="min-h-10 rounded-md border border-slate-300 px-3 text-sm"
+                      disabled={isSaving || isCancelled}
+                      onChange={(event) => updateItem(item.localId, { unit: event.target.value })}
+                      value={item.unit}
+                    />
+                    <input
+                      className="min-h-10 rounded-md border border-slate-300 px-3 text-sm"
+                      disabled={isSaving || isCancelled}
+                      min={0}
+                      onChange={(event) => updateItem(item.localId, { unitPrice: event.target.value })}
+                      step="0.01"
+                      type="number"
+                      value={item.unitPrice}
+                    />
+                    <input
+                      className="min-h-10 rounded-md border border-slate-300 px-3 text-sm"
+                      disabled={isSaving || isCancelled}
+                      min={0}
+                      onChange={(event) => updateItem(item.localId, { discount: event.target.value })}
+                      step="0.01"
+                      type="number"
+                      value={item.discount}
+                    />
+                    <div className="flex items-center justify-between gap-2 rounded-md bg-slate-50 px-3 text-sm font-bold text-slate-950">
+                      {formatMoney(preview.itemRows[index]?.amount ?? 0)}
+                    </div>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button className="rounded-md border px-2 py-1 text-xs font-semibold" disabled={index === 0 || isCancelled} onClick={() => moveItem(item.localId, -1)} type="button">
+                      <ArrowUp className="h-4 w-4" />
+                    </button>
+                    <button className="rounded-md border px-2 py-1 text-xs font-semibold" disabled={index === form.items.length - 1 || isCancelled} onClick={() => moveItem(item.localId, 1)} type="button">
+                      <ArrowDown className="h-4 w-4" />
+                    </button>
+                    <button className="rounded-md border px-2 py-1 text-xs font-semibold" disabled={isCancelled} onClick={() => duplicateItem(item.localId)} type="button">
+                      Duplicate
+                    </button>
+                    <button className="rounded-md border border-red-300 px-2 py-1 text-xs font-semibold text-red-700" disabled={form.items.length <= 1 || isCancelled} onClick={() => removeItem(item.localId)} type="button">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           </section>
 
           <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-base font-bold text-slate-950">Scope and terms</h2>
-            <div className="mt-4 space-y-4">
-              <DetailItem label="Scope of work" value={quotation.scopeOfWork} />
-              <DetailItem label="Payment terms" value={quotation.paymentTerms} />
-              <DetailItem label="Warranty terms" value={quotation.warrantyTerms} />
-              <DetailItem label="Exclusions" value={quotation.exclusions} />
-              <DetailItem label="Notes" value={quotation.notes} />
+            <div className="mt-4 grid gap-4">
+              {[
+                ["scopeOfWork", "Scope of work"],
+                ["exclusions", "Exclusions"],
+                ["paymentTerms", "Payment terms"],
+                ["warrantyTerms", "Warranty terms"],
+                ["notes", "Additional notes"],
+              ].map(([key, label]) => (
+                <label className="text-sm font-semibold text-slate-800" key={key}>
+                  {label}
+                  <textarea
+                    className="mt-2 min-h-28 w-full rounded-md border border-slate-300 px-3 py-3 text-sm"
+                    disabled={isSaving || isCancelled}
+                    onChange={(event) =>
+                      updateField(key as keyof EditorForm, event.target.value as never)
+                    }
+                    value={String(form[key as keyof EditorForm] ?? "")}
+                  />
+                </label>
+              ))}
             </div>
           </section>
         </div>
 
-        <aside className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-base font-bold text-slate-950">Pricing</h2>
-          <dl className="mt-4 space-y-3">
-            <div className="flex justify-between gap-4 text-sm">
-              <dt className="font-medium text-slate-600">Subtotal</dt>
-              <dd className="font-bold text-slate-950">{formatMoney(quotation.subtotal)}</dd>
+        <aside className="space-y-5">
+          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-base font-bold text-slate-950">Totals</h2>
+            <div className="mt-4 grid gap-4">
+              <label className="text-sm font-semibold text-slate-800">
+                Quotation discount
+                <input className="mt-2 min-h-10 w-full rounded-md border border-slate-300 px-3 text-sm" disabled={isSaving || isCancelled} min={0} onChange={(event) => updateField("discount", event.target.value)} step="0.01" type="number" value={form.discount} />
+              </label>
+              <label className="text-sm font-semibold text-slate-800">
+                Additional fees
+                <input className="mt-2 min-h-10 w-full rounded-md border border-slate-300 px-3 text-sm" disabled={isSaving || isCancelled} min={0} onChange={(event) => updateField("additionalFees", event.target.value)} step="0.01" type="number" value={form.additionalFees} />
+              </label>
+              <label className="text-sm font-semibold text-slate-800">
+                Tax rate
+                <input className="mt-2 min-h-10 w-full rounded-md border border-slate-300 px-3 text-sm" disabled={isSaving || isCancelled} min={0} onChange={(event) => updateField("taxRate", event.target.value)} step="0.01" type="number" value={form.taxRate} />
+              </label>
             </div>
-            <div className="flex justify-between gap-4 text-sm">
-              <dt className="font-medium text-slate-600">Discount</dt>
-              <dd className="font-bold text-slate-950">{formatMoney(quotation.discount)}</dd>
-            </div>
-            <div className="flex justify-between gap-4 text-sm">
-              <dt className="font-medium text-slate-600">Tax ({Number(quotation.taxRate)}%)</dt>
-              <dd className="font-bold text-slate-950">{formatMoney(quotation.taxAmount)}</dd>
-            </div>
-            <div className="flex justify-between gap-4 text-sm">
-              <dt className="font-medium text-slate-600">Additional fees</dt>
-              <dd className="font-bold text-slate-950">{formatMoney(quotation.additionalFees)}</dd>
-            </div>
-            <div className="border-t border-slate-200 pt-3">
+            <dl className="mt-5 space-y-3 text-sm">
               <div className="flex justify-between gap-4">
-                <dt className="font-bold text-slate-950">Grand total</dt>
-                <dd className="text-xl font-bold text-blue-800">
-                  {formatMoney(quotation.grandTotal)}
-                </dd>
+                <dt className="font-medium text-slate-600">Items subtotal</dt>
+                <dd className="font-bold text-slate-950">{formatMoney(preview.itemsSubtotal)}</dd>
               </div>
-            </div>
-          </dl>
+              <div className="flex justify-between gap-4">
+                <dt className="font-medium text-slate-600">Taxable subtotal</dt>
+                <dd className="font-bold text-slate-950">{formatMoney(preview.taxableSubtotal)}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="font-medium text-slate-600">Tax amount</dt>
+                <dd className="font-bold text-slate-950">{formatMoney(preview.taxAmount)}</dd>
+              </div>
+              <div className="border-t border-slate-200 pt-3">
+                <div className="flex justify-between gap-4">
+                  <dt className="font-bold text-slate-950">Grand total</dt>
+                  <dd className="text-xl font-bold text-blue-800">{formatMoney(preview.grandTotal)}</dd>
+                </div>
+              </div>
+            </dl>
+          </section>
         </aside>
       </section>
     </div>

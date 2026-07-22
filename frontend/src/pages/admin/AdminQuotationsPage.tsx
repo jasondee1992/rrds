@@ -1,8 +1,11 @@
-import { Eye, Search } from "lucide-react";
+import { Copy, Edit, Plus, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { getSafeApiErrorMessage } from "../../services/apiError";
-import { getAdminQuotations } from "../../services/adminQuotationService";
+import {
+  duplicateAdminQuotation,
+  getAdminQuotations,
+} from "../../services/adminQuotationService";
 import type {
   QuotationListFilters,
   QuotationListResponse,
@@ -42,6 +45,8 @@ export function AdminQuotationsPage() {
     limit: 10,
     search: "",
     status: "",
+    dateFrom: "",
+    dateTo: "",
     sort: "latest",
   });
   const [data, setData] = useState<QuotationListResponse | null>(null);
@@ -81,6 +86,17 @@ export function AdminQuotationsPage() {
     };
   }, [queryKey]);
 
+  async function handleDuplicate(id: string) {
+    try {
+      await duplicateAdminQuotation(id);
+      const result = await getAdminQuotations(filters);
+      setData(result);
+      setErrorMessage("");
+    } catch (error) {
+      setErrorMessage(getSafeApiErrorMessage(error, "Unable to duplicate quotation."));
+    }
+  }
+
   return (
     <div className="space-y-5">
       <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
@@ -88,10 +104,18 @@ export function AdminQuotationsPage() {
           <div>
             <h2 className="text-xl font-bold text-slate-950">Quotations</h2>
             <p className="mt-1 text-sm text-slate-600">
-              Draft quotations created from reviewed estimates.
+              Create, edit, duplicate, and review quotation drafts.
             </p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-[1fr_180px] lg:min-w-[520px]">
+          <Link
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-blue-700 px-4 text-sm font-semibold text-white hover:bg-blue-800"
+            to="/admin/quotations/new"
+          >
+            <Plus aria-hidden="true" className="h-4 w-4" />
+            New Quotation
+          </Link>
+        </div>
+        <div className="mt-5 grid gap-3 md:grid-cols-4">
             <label className="text-sm font-semibold text-slate-800">
               Search
               <div className="mt-2 flex min-h-10 items-center gap-2 rounded-md border border-slate-300 bg-white px-3 focus-within:border-blue-700 focus-within:ring-2 focus-within:ring-blue-700/20">
@@ -130,7 +154,28 @@ export function AdminQuotationsPage() {
                 ))}
               </select>
             </label>
-          </div>
+            <label className="text-sm font-semibold text-slate-800">
+              Date from
+              <input
+                className="mt-2 min-h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20"
+                onChange={(event) =>
+                  setFilters((current) => ({ ...current, page: 1, dateFrom: event.target.value }))
+                }
+                type="date"
+                value={filters.dateFrom}
+              />
+            </label>
+            <label className="text-sm font-semibold text-slate-800">
+              Date to
+              <input
+                className="mt-2 min-h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20"
+                onChange={(event) =>
+                  setFilters((current) => ({ ...current, page: 1, dateTo: event.target.value }))
+                }
+                type="date"
+                value={filters.dateTo}
+              />
+            </label>
         </div>
       </section>
 
@@ -154,11 +199,13 @@ export function AdminQuotationsPage() {
                 <tr>
                   <th className="px-4 py-3">Quotation</th>
                   <th className="px-4 py-3">Customer</th>
+                  <th className="px-4 py-3">Project</th>
                   <th className="px-4 py-3">Estimate</th>
                   <th className="px-4 py-3">Total</th>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3">Prepared by</th>
-                  <th className="px-4 py-3">Created</th>
+                  <th className="px-4 py-3">Updated</th>
+                  <th className="px-4 py-3">Valid until</th>
                   <th className="px-4 py-3">Action</th>
                 </tr>
               </thead>
@@ -168,7 +215,10 @@ export function AdminQuotationsPage() {
                     <td className="px-4 py-3 font-bold text-slate-950">
                       {quotation.quotationNumber}
                     </td>
-                    <td className="px-4 py-3 text-slate-700">{quotation.customer.fullName}</td>
+                    <td className="px-4 py-3 text-slate-700">
+                      {quotation.customerFullName ?? quotation.customer.fullName}
+                    </td>
+                    <td className="px-4 py-3 text-slate-700">{quotation.projectTitle}</td>
                     <td className="px-4 py-3 text-slate-700">
                       {quotation.estimateRequest?.estimateNumber ?? "Not linked"}
                     </td>
@@ -181,15 +231,26 @@ export function AdminQuotationsPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-slate-700">{quotation.preparedBy.fullName}</td>
-                    <td className="px-4 py-3 text-slate-700">{formatDate(quotation.createdAt)}</td>
+                    <td className="px-4 py-3 text-slate-700">{formatDate(quotation.updatedAt)}</td>
+                    <td className="px-4 py-3 text-slate-700">{formatDate(quotation.validUntil)}</td>
                     <td className="px-4 py-3">
+                      <div className="flex gap-2">
                       <Link
                         className="inline-flex items-center gap-2 rounded-md border border-blue-700 px-3 py-2 text-xs font-bold text-blue-800 hover:bg-blue-50"
                         to={`/admin/quotations/${quotation.id}`}
                       >
-                        <Eye aria-hidden="true" className="h-4 w-4" />
-                        View
+                        <Edit aria-hidden="true" className="h-4 w-4" />
+                        Edit
                       </Link>
+                      <button
+                        className="inline-flex items-center gap-2 rounded-md border border-slate-300 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
+                        onClick={() => void handleDuplicate(quotation.id)}
+                        type="button"
+                      >
+                        <Copy aria-hidden="true" className="h-4 w-4" />
+                        Duplicate
+                      </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

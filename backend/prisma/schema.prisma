@@ -52,6 +52,7 @@ enum QuotationItemType {
   SERVICE
   LABOR
   MATERIAL
+  TRANSPORTATION
   TRANIT
   OTHER
 }
@@ -70,6 +71,7 @@ model AdminUser {
   approvedQuotations Quotation[]        @relation("ApprovedQuotations")
   reviewedEstimates  EstimateRequest[]  @relation("ReviewedEstimates")
   estimateRevisions  EstimateRevision[]
+  auditLogs          AuditLog[]
 
   @@index([fullName])
   @@index([email])
@@ -210,33 +212,40 @@ model EstimateRevision {
 }
 
 model Quotation {
-  id                String           @id @default(uuid())
-  quotationNumber   String           @unique
-  customerId        String
-  estimateRequestId String?          @unique
-  quotationDate     DateTime
-  validUntil        DateTime
-  subtotal          Decimal          @default(0)
-  discount          Decimal          @default(0)
-  taxRate           Decimal          @default(0)
-  taxAmount         Decimal          @default(0)
-  additionalFees    Decimal          @default(0)
-  grandTotal        Decimal          @default(0)
-  scopeOfWork       String
-  exclusions        String
-  paymentTerms      String
-  warrantyTerms     String
-  notes             String
-  preparedById      String
-  approvedById      String?
-  status            QuotationStatus  @default(DRAFT)
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
-  customer          Customer         @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  estimateRequest   EstimateRequest? @relation(fields: [estimateRequestId], references: [id], onDelete: SetNull)
-  preparedBy        AdminUser        @relation("PreparedQuotations", fields: [preparedById], references: [id], onDelete: Restrict)
-  approvedBy        AdminUser?       @relation("ApprovedQuotations", fields: [approvedById], references: [id], onDelete: SetNull)
-  items             QuotationItem[]
+  id                   String           @id @default(uuid())
+  quotationNumber      String           @unique
+  customerId           String
+  estimateRequestId    String?          @unique
+  projectTitle         String           @default("Untitled Project")
+  customerFullName     String?
+  customerCompanyName  String?
+  customerEmail        String?
+  customerMobileNumber String?
+  billingAddress       String?
+  serviceAddress       String?
+  quotationDate        DateTime
+  validUntil           DateTime
+  subtotal             Decimal          @default(0)
+  discount             Decimal          @default(0)
+  taxRate              Decimal          @default(0)
+  taxAmount            Decimal          @default(0)
+  additionalFees       Decimal          @default(0)
+  grandTotal           Decimal          @default(0)
+  scopeOfWork          String
+  exclusions           String
+  paymentTerms         String
+  warrantyTerms        String
+  notes                String
+  preparedById         String
+  approvedById         String?
+  status               QuotationStatus  @default(DRAFT)
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  customer             Customer         @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  estimateRequest      EstimateRequest? @relation(fields: [estimateRequestId], references: [id], onDelete: SetNull)
+  preparedBy           AdminUser        @relation("PreparedQuotations", fields: [preparedById], references: [id], onDelete: Restrict)
+  approvedBy           AdminUser?       @relation("ApprovedQuotations", fields: [approvedById], references: [id], onDelete: SetNull)
+  items                QuotationItem[]
 
   @@index([customerId])
   @@index([preparedById])
@@ -256,6 +265,7 @@ model QuotationItem {
   unit        String
   unitPrice   Decimal           @default(0)
   amount      Decimal           @default(0)
+  discount    Decimal           @default(0)
   sortOrder   Int               @default(0)
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
@@ -265,6 +275,24 @@ model QuotationItem {
   @@index([itemType])
   @@index([description])
   @@index([sortOrder])
+}
+
+model AuditLog {
+  id              String     @id @default(uuid())
+  adminId         String?
+  action          String
+  entityType      String
+  entityId        String?
+  entityReference String?
+  metadata        String?
+  createdAt       DateTime   @default(now())
+  admin           AdminUser? @relation(fields: [adminId], references: [id], onDelete: SetNull)
+
+  @@index([adminId])
+  @@index([action])
+  @@index([entityType])
+  @@index([entityId])
+  @@index([createdAt])
 }
 
 model CompanySetting {
