@@ -4,12 +4,17 @@ import rateLimit from "express-rate-limit";
 import multer from "multer";
 import {
   deleteFounderProfileImage,
+  deleteHomeCarouselImageController,
   getAdminPublicProfileSettingsController,
   getPublicSiteSettingsController,
+  patchHomeCarouselImage,
+  patchHomeCarouselImageOrder,
   patchCompanyInformation,
   patchFounderProfile,
+  patchHomePageSettings,
   patchSocialLinks,
   postFounderProfileImage,
+  postHomeCarouselImage,
 } from "../controllers/settingsController";
 import { authenticateAdmin, authorizeRoles } from "../middlewares/adminAuth";
 import { errorResponse } from "../utils/apiResponse";
@@ -51,6 +56,11 @@ settingsRoutes.patch(
   requireSettingsWrite,
   patchFounderProfile,
 );
+settingsRoutes.patch(
+  "/admin/settings/home-page",
+  requireSettingsWrite,
+  patchHomePageSettings,
+);
 settingsRoutes.post(
   "/admin/settings/founder-profile/image",
   requireSettingsWrite,
@@ -61,4 +71,25 @@ settingsRoutes.delete(
   "/admin/settings/founder-profile/image",
   requireSettingsWrite,
   deleteFounderProfileImage,
+);
+settingsRoutes.post(
+  "/admin/settings/home-page/carousel-images",
+  requireSettingsWrite,
+  upload.single("image"),
+  postHomeCarouselImage,
+);
+settingsRoutes.patch(
+  "/admin/settings/home-page/carousel-images/reorder",
+  requireSettingsWrite,
+  patchHomeCarouselImageOrder,
+);
+settingsRoutes.patch(
+  "/admin/settings/home-page/carousel-images/:imageId",
+  requireSettingsWrite,
+  patchHomeCarouselImage,
+);
+settingsRoutes.delete(
+  "/admin/settings/home-page/carousel-images/:imageId",
+  requireSettingsWrite,
+  deleteHomeCarouselImageController,
 );

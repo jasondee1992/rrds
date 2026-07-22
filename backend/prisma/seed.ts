@@ -60,6 +60,11 @@ async function main() {
     "Cleaning and General Maintenance",
     "Multi-Unit and Hotel Aircon Operations",
   ];
+  const defaultHomeStats = [
+    { label: "Residential Support", value: "Homes" },
+    { label: "Commercial Support", value: "Businesses" },
+    { label: "Service Focus", value: "Cooling Comfort" },
+  ];
 
   const companySettingData = {
     companyName: "RRDS Airconditioning Services",
@@ -82,6 +87,36 @@ async function main() {
       "Currently Handling Air-Conditioning Operations at Makati Palace Hotel",
     founderImagePath: null,
     founderExpertise: JSON.stringify(defaultFounderExpertise),
+    homeHeroEyebrow: "RRDS Airconditioning Services",
+    homeHeroTitle: "KEEPING YOU COOL. ALWAYS.",
+    homeHeroSubtitle:
+      "Professional air-conditioning installation, maintenance, cleaning, and repair services for homes and businesses.",
+    homePrimaryCtaLabel: "Request Free Quotation",
+    homePrimaryCtaPath: "/free-quotation",
+    homeSecondaryCtaLabel: "Contact Us",
+    homeSecondaryCtaPath: "/contact",
+    homeStats: JSON.stringify(defaultHomeStats),
+    homeWhyEyebrow: "Why Choose RRDS",
+    homeWhyTitle: "Reliable Air-Conditioning Support",
+    homeWhyDescription:
+      "Built around dependable workmanship, practical recommendations, and responsive support.",
+    homeServicesEyebrow: "Our Services",
+    homeServicesTitle: "Aircon Services for Homes and Businesses",
+    homeServicesDescription:
+      "Core RRDS public service offerings shown with editable placeholder descriptions.",
+    homeAboutEyebrow: "About RRDS",
+    homeAboutTitle: "Professional service with a focus on comfort and reliability.",
+    homeAboutDescription:
+      "RRDS Airconditioning Services is presented here with editable placeholder content. This section can later be updated with approved company details while keeping the focus on quality work, reliable service, and support for both residential and commercial customers.",
+    homeAboutCtaLabel: "Learn More About RRDS",
+    homeProjectsEyebrow: "Sample Projects",
+    homeProjectsTitle: "Project Preview",
+    homeProjectsDescription:
+      "Sample cards only. Replace these with verified RRDS project details during a later phase.",
+    homeTestimonialsEyebrow: "Testimonials",
+    homeTestimonialsTitle: "What Customers May Say",
+    homeTestimonialsDescription:
+      "Placeholder testimonials for layout approval. Replace with verified customer feedback later.",
     quotationValidityDays: 30,
     estimateValidityDays: 7,
     taxRate: new Prisma.Decimal(0),

@@ -35,4 +35,41 @@ export const fallbackSiteSettings: SiteSettings = {
       "Multi-Unit and Hotel Aircon Operations",
     ],
   },
+  home: {
+    heroEyebrow: "RRDS Airconditioning Services",
+    heroTitle: "KEEPING YOU COOL. ALWAYS.",
+    heroSubtitle:
+      "Professional air-conditioning installation, maintenance, cleaning, and repair services for homes and businesses.",
+    primaryCtaLabel: "Request Free Quotation",
+    primaryCtaPath: "/free-quotation",
+    secondaryCtaLabel: "Contact Us",
+    secondaryCtaPath: "/contact",
+    stats: [
+      { label: "Residential Support", value: "Homes" },
+      { label: "Commercial Support", value: "Businesses" },
+      { label: "Service Focus", value: "Cooling Comfort" },
+    ],
+    whyEyebrow: "Why Choose RRDS",
+    whyTitle: "Reliable Air-Conditioning Support",
+    whyDescription:
+      "Built around dependable workmanship, practical recommendations, and responsive support.",
+    servicesEyebrow: "Our Services",
+    servicesTitle: "Aircon Services for Homes and Businesses",
+    servicesDescription:
+      "Core RRDS public service offerings shown with editable placeholder descriptions.",
+    aboutEyebrow: "About RRDS",
+    aboutTitle: "Professional service with a focus on comfort and reliability.",
+    aboutDescription:
+      "RRDS Airconditioning Services is presented here with editable placeholder content. This section can later be updated with approved company details while keeping the focus on quality work, reliable service, and support for both residential and commercial customers.",
+    aboutCtaLabel: "Learn More About RRDS",
+    projectsEyebrow: "Sample Projects",
+    projectsTitle: "Project Preview",
+    projectsDescription:
+      "Sample cards only. Replace these with verified RRDS project details during a later phase.",
+    testimonialsEyebrow: "Testimonials",
+    testimonialsTitle: "What Customers May Say",
+    testimonialsDescription:
+      "Placeholder testimonials for layout approval. Replace with verified customer feedback later.",
+    carouselImages: [],
+  },
 };

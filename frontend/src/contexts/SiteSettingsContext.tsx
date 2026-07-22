@@ -24,7 +24,7 @@ type SiteSettingsContextValue = {
 
 const SiteSettingsContext = createContext<SiteSettingsContextValue | null>(null);
 
-function resolvePublicAssetUrl(value: string | undefined) {
+export function resolvePublicAssetUrl(value: string | undefined) {
   if (!value) {
     return fallbackFounderImage;
   }
@@ -57,6 +57,12 @@ function mergeSettings(settings: SiteSettings) {
         settings.founder.expertise.length > 0
           ? settings.founder.expertise
           : fallbackSiteSettings.founder.expertise,
+    },
+    home: {
+      ...fallbackSiteSettings.home,
+      ...settings.home,
+      stats: settings.home.stats.length > 0 ? settings.home.stats : fallbackSiteSettings.home.stats,
+      carouselImages: settings.home.carouselImages,
     },
   };
 }

@@ -25,6 +25,10 @@ app.use(
     fallthrough: false,
     immutable: true,
     maxAge: "1h",
+    setHeaders: (res) => {
+      res.setHeader("Access-Control-Allow-Origin", env.FRONTEND_URL);
+      res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+    },
   }),
 );
 

@@ -296,14 +296,14 @@ model AuditLog {
 }
 
 model CompanySetting {
-  id                           String   @id @default(uuid())
+  id                           String              @id @default(uuid())
   companyName                  String
   companyAddress               String
   companyPhone                 String
   companyEmail                 String
   companyWebsite               String?
   companyLogoPath              String?
-  currencyCode                 String   @default("PHP")
+  currencyCode                 String              @default("PHP")
   facebookUrl                  String?
   linkedinUrl                  String?
   founderName                  String?
@@ -314,16 +314,56 @@ model CompanySetting {
   founderCurrentResponsibility String?
   founderImagePath             String?
   founderExpertise             String?
-  quotationValidityDays        Int      @default(30)
-  estimateValidityDays         Int      @default(7)
-  taxRate                      Decimal  @default(0)
+  homeHeroEyebrow              String?
+  homeHeroTitle                String?
+  homeHeroSubtitle             String?
+  homePrimaryCtaLabel          String?
+  homePrimaryCtaPath           String?
+  homeSecondaryCtaLabel        String?
+  homeSecondaryCtaPath         String?
+  homeStats                    String?
+  homeWhyEyebrow               String?
+  homeWhyTitle                 String?
+  homeWhyDescription           String?
+  homeServicesEyebrow          String?
+  homeServicesTitle            String?
+  homeServicesDescription      String?
+  homeAboutEyebrow             String?
+  homeAboutTitle               String?
+  homeAboutDescription         String?
+  homeAboutCtaLabel            String?
+  homeProjectsEyebrow          String?
+  homeProjectsTitle            String?
+  homeProjectsDescription      String?
+  homeTestimonialsEyebrow      String?
+  homeTestimonialsTitle        String?
+  homeTestimonialsDescription  String?
+  quotationValidityDays        Int                 @default(30)
+  estimateValidityDays         Int                 @default(7)
+  taxRate                      Decimal             @default(0)
   estimateDisclaimer           String
   quotationTerms               String
   quotationFooter              String?
   registrationDetails          String?
-  createdAt                    DateTime @default(now())
-  updatedAt                    DateTime @updatedAt
+  createdAt                    DateTime            @default(now())
+  updatedAt                    DateTime            @updatedAt
+  homeCarouselImages           HomeCarouselImage[]
 
   @@index([companyName])
   @@index([companyEmail])
+}
+
+model HomeCarouselImage {
+  id               String         @id @default(uuid())
+  companySettingId String
+  imagePath        String
+  altText          String
+  caption          String?
+  sortOrder        Int            @default(0)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  companySetting   CompanySetting @relation(fields: [companySettingId], references: [id], onDelete: Cascade)
+
+  @@index([companySettingId])
+  @@index([sortOrder])
 }

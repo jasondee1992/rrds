@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  ChevronDown,
   ClipboardList,
   FileText,
   FolderKanban,
@@ -30,7 +31,13 @@ const adminNavItems: AdminNavItem[] = [
   { label: "Customers", path: "/admin/customers", Icon: Users },
   { label: "Services", path: "/admin/services", Icon: Wrench },
   { label: "Projects", path: "/admin/projects", Icon: FolderKanban },
-  { label: "Settings", path: "/admin/settings", Icon: Settings },
+];
+
+const settingsNavItems = [
+  { label: "Company Information", path: "/admin/settings?tab=company" },
+  { label: "Social Media", path: "/admin/settings?tab=social" },
+  { label: "Home Page", path: "/admin/settings?tab=home" },
+  { label: "Founder Profile", path: "/admin/settings?tab=founder" },
 ];
 
 function getPageTitle(pathname: string) {
@@ -40,6 +47,10 @@ function getPageTitle(pathname: string) {
 
   if (pathname.startsWith("/admin/estimates/")) {
     return "Estimate Details";
+  }
+
+  if (pathname.startsWith("/admin/settings")) {
+    return "Settings";
   }
 
   const activeItem = adminNavItems.find((item) => item.path === pathname);
@@ -52,6 +63,7 @@ export function AdminLayout() {
   const { admin, logout } = useAuth();
   const location = useLocation();
   const pageTitle = getPageTitle(location.pathname);
+  const isSettingsActive = location.pathname.startsWith("/admin/settings");
 
   const sidebarContent = (
     <div className="flex h-full flex-col bg-slate-950 text-white">
@@ -83,6 +95,48 @@ export function AdminLayout() {
             <span className="truncate">{label}</span>
           </NavLink>
         ))}
+        <div>
+          <NavLink
+            to="/admin/settings?tab=company"
+            onClick={() => setIsMobileSidebarOpen(false)}
+            className={`flex min-h-11 items-center gap-3 rounded-md px-3 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-cyan-300 ${
+              isSettingsActive
+                ? "bg-blue-700 text-white"
+                : "text-slate-200 hover:bg-white/10 hover:text-white"
+            }`}
+          >
+            <Settings className="h-5 w-5 shrink-0" aria-hidden="true" />
+            <span className="truncate">Settings</span>
+            <ChevronDown
+              className={`ml-auto h-4 w-4 transition ${isSettingsActive ? "rotate-180" : ""}`}
+              aria-hidden="true"
+            />
+          </NavLink>
+          {isSettingsActive ? (
+            <div className="mt-1 space-y-1 pl-8">
+              {settingsNavItems.map((item) => (
+                <NavLink
+                  className={() => {
+                    const isActive =
+                      location.pathname === "/admin/settings" &&
+                      `${location.pathname}${location.search}` === item.path;
+
+                    return `block rounded-md px-3 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-cyan-300 ${
+                      isActive
+                        ? "bg-white/15 text-white"
+                        : "text-slate-300 hover:bg-white/10 hover:text-white"
+                    }`;
+                  }}
+                  key={item.path}
+                  onClick={() => setIsMobileSidebarOpen(false)}
+                  to={item.path}
+                >
+                  {item.label}
+                </NavLink>
+              ))}
+            </div>
+          ) : null}
+        </div>
       </nav>
 
       <div className="border-t border-white/10 p-3">

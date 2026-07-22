@@ -3,16 +3,25 @@ import type { Request, Response } from "express";
 import {
   getAdminPublicProfileSettings,
   getPublicSiteSettings,
+  deleteHomeCarouselImage,
   removeFounderImage,
+  reorderHomeCarouselImages,
+  updateHomeCarouselImage,
   updateCompanyInformation,
   updateFounderProfile,
+  updateHomePageSettings,
   updateSocialLinks,
   uploadFounderImage,
+  uploadHomeCarouselImage,
 } from "../services/settingsService";
 import { errorResponse, successResponse } from "../utils/apiResponse";
 import {
   companyInformationSchema,
   founderProfileSchema,
+  homeCarouselImageParamSchema,
+  homeCarouselImageSchema,
+  homeCarouselReorderSchema,
+  homePageSettingsSchema,
   socialLinksSchema,
 } from "../validations/settingsSchemas";
 
@@ -79,6 +88,23 @@ export async function patchFounderProfile(req: Request, res: Response) {
   res.json(successResponse("Founder profile saved", { settings }));
 }
 
+export async function patchHomePageSettings(req: Request, res: Response) {
+  const parsedBody = homePageSettingsSchema.safeParse(req.body);
+
+  if (!parsedBody.success) {
+    res.status(400).json(errorResponse("Invalid home page settings."));
+    return;
+  }
+
+  const settings = await updateHomePageSettings(
+    parsedBody.data,
+    req.admin?.id ?? "",
+    req.admin?.role ?? AdminRole.STAFF,
+  );
+
+  res.json(successResponse("Home page settings saved", { settings }));
+}
+
 export async function postFounderProfileImage(req: Request, res: Response) {
   const settings = await uploadFounderImage(
     req.file,
@@ -96,4 +122,81 @@ export async function deleteFounderProfileImage(req: Request, res: Response) {
   );
 
   res.json(successResponse("Founder image removed", { settings }));
+}
+
+export async function postHomeCarouselImage(req: Request, res: Response) {
+  const parsedBody = homeCarouselImageSchema.safeParse(req.body);
+
+  if (!parsedBody.success) {
+    res.status(400).json(errorResponse("Invalid carousel image details."));
+    return;
+  }
+
+  const settings = await uploadHomeCarouselImage(
+    req.file,
+    parsedBody.data,
+    req.admin?.id ?? "",
+    req.admin?.role ?? AdminRole.STAFF,
+  );
+
+  res.status(201).json(successResponse("Home carousel image uploaded", { settings }));
+}
+
+export async function patchHomeCarouselImage(req: Request, res: Response) {
+  const parsedParams = homeCarouselImageParamSchema.safeParse(req.params);
+
+  if (!parsedParams.success) {
+    res.status(400).json(errorResponse("Invalid carousel image ID."));
+    return;
+  }
+
+  const parsedBody = homeCarouselImageSchema.safeParse(req.body);
+
+  if (!parsedBody.success) {
+    res.status(400).json(errorResponse("Invalid carousel image details."));
+    return;
+  }
+
+  const settings = await updateHomeCarouselImage(
+    parsedParams.data.imageId,
+    parsedBody.data,
+    req.admin?.id ?? "",
+    req.admin?.role ?? AdminRole.STAFF,
+  );
+
+  res.json(successResponse("Home carousel image saved", { settings }));
+}
+
+export async function deleteHomeCarouselImageController(req: Request, res: Response) {
+  const parsedParams = homeCarouselImageParamSchema.safeParse(req.params);
+
+  if (!parsedParams.success) {
+    res.status(400).json(errorResponse("Invalid carousel image ID."));
+    return;
+  }
+
+  const settings = await deleteHomeCarouselImage(
+    parsedParams.data.imageId,
+    req.admin?.id ?? "",
+    req.admin?.role ?? AdminRole.STAFF,
+  );
+
+  res.json(successResponse("Home carousel image removed", { settings }));
+}
+
+export async function patchHomeCarouselImageOrder(req: Request, res: Response) {
+  const parsedBody = homeCarouselReorderSchema.safeParse(req.body);
+
+  if (!parsedBody.success) {
+    res.status(400).json(errorResponse("Invalid carousel image order."));
+    return;
+  }
+
+  const settings = await reorderHomeCarouselImages(
+    parsedBody.data,
+    req.admin?.id ?? "",
+    req.admin?.role ?? AdminRole.STAFF,
+  );
+
+  res.json(successResponse("Home carousel image order saved", { settings }));
 }

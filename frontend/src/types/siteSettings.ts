@@ -19,4 +19,37 @@ export type SiteSettings = {
     imageUrl?: string;
     expertise: string[];
   };
+  home: {
+    heroEyebrow: string;
+    heroTitle: string;
+    heroSubtitle: string;
+    primaryCtaLabel: string;
+    primaryCtaPath: string;
+    secondaryCtaLabel: string;
+    secondaryCtaPath: string;
+    stats: Array<{ label: string; value: string }>;
+    whyEyebrow: string;
+    whyTitle: string;
+    whyDescription: string;
+    servicesEyebrow: string;
+    servicesTitle: string;
+    servicesDescription: string;
+    aboutEyebrow: string;
+    aboutTitle: string;
+    aboutDescription: string;
+    aboutCtaLabel: string;
+    projectsEyebrow: string;
+    projectsTitle: string;
+    projectsDescription: string;
+    testimonialsEyebrow: string;
+    testimonialsTitle: string;
+    testimonialsDescription: string;
+    carouselImages: Array<{
+      id?: string;
+      imageUrl: string;
+      altText: string;
+      caption?: string;
+      sortOrder: number;
+    }>;
+  };
 };

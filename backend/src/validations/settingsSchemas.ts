@@ -78,6 +78,61 @@ export const founderProfileSchema = z.object({
     }),
 });
 
+const routePath = z
+  .string()
+  .trim()
+  .min(1)
+  .max(120)
+  .regex(/^\/[A-Za-z0-9/_-]*$/, "CTA path must be an internal route.");
+
+const homeStatSchema = z.object({
+  label: requiredText("Stat label", 60),
+  value: requiredText("Stat value", 60),
+});
+
+export const homePageSettingsSchema = z.object({
+  heroEyebrow: requiredText("Hero eyebrow", 120),
+  heroTitle: requiredText("Hero title", 120),
+  heroSubtitle: requiredText("Hero subtitle", 300),
+  primaryCtaLabel: requiredText("Primary button label", 80),
+  primaryCtaPath: routePath,
+  secondaryCtaLabel: requiredText("Secondary button label", 80),
+  secondaryCtaPath: routePath,
+  stats: z.array(homeStatSchema).min(1).max(6),
+  whyEyebrow: requiredText("Why section eyebrow", 80),
+  whyTitle: requiredText("Why section title", 140),
+  whyDescription: requiredText("Why section description", 300),
+  servicesEyebrow: requiredText("Services eyebrow", 80),
+  servicesTitle: requiredText("Services title", 140),
+  servicesDescription: requiredText("Services description", 300),
+  aboutEyebrow: requiredText("About eyebrow", 80),
+  aboutTitle: requiredText("About title", 160),
+  aboutDescription: requiredText("About description", 700),
+  aboutCtaLabel: requiredText("About button label", 80),
+  projectsEyebrow: requiredText("Projects eyebrow", 80),
+  projectsTitle: requiredText("Projects title", 140),
+  projectsDescription: requiredText("Projects description", 300),
+  testimonialsEyebrow: requiredText("Testimonials eyebrow", 80),
+  testimonialsTitle: requiredText("Testimonials title", 140),
+  testimonialsDescription: requiredText("Testimonials description", 300),
+});
+
+export const homeCarouselImageParamSchema = z.object({
+  imageId: z.uuid("Invalid carousel image ID."),
+});
+
+export const homeCarouselImageSchema = z.object({
+  altText: requiredText("Image alt text", 160),
+  caption: optionalText(160),
+});
+
+export const homeCarouselReorderSchema = z.object({
+  imageIds: z.array(z.uuid("Invalid carousel image ID.")).min(1).max(20),
+});
+
 export type CompanyInformationInput = z.infer<typeof companyInformationSchema>;
 export type SocialLinksInput = z.infer<typeof socialLinksSchema>;
 export type FounderProfileInput = z.infer<typeof founderProfileSchema>;
+export type HomePageSettingsInput = z.infer<typeof homePageSettingsSchema>;
+export type HomeCarouselImageInput = z.infer<typeof homeCarouselImageSchema>;
+export type HomeCarouselReorderInput = z.infer<typeof homeCarouselReorderSchema>;

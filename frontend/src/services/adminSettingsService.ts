@@ -24,6 +24,33 @@ export type FounderProfilePayload = {
   founderExpertise: string[];
 };
 
+export type HomePageSettingsPayload = {
+  heroEyebrow: string;
+  heroTitle: string;
+  heroSubtitle: string;
+  primaryCtaLabel: string;
+  primaryCtaPath: string;
+  secondaryCtaLabel: string;
+  secondaryCtaPath: string;
+  stats: Array<{ label: string; value: string }>;
+  whyEyebrow: string;
+  whyTitle: string;
+  whyDescription: string;
+  servicesEyebrow: string;
+  servicesTitle: string;
+  servicesDescription: string;
+  aboutEyebrow: string;
+  aboutTitle: string;
+  aboutDescription: string;
+  aboutCtaLabel: string;
+  projectsEyebrow: string;
+  projectsTitle: string;
+  projectsDescription: string;
+  testimonialsEyebrow: string;
+  testimonialsTitle: string;
+  testimonialsDescription: string;
+};
+
 type SettingsResponse = ApiResponse<{ settings: SiteSettings }>;
 
 function requireSettings(response: SettingsResponse) {
@@ -85,6 +112,61 @@ export async function uploadFounderProfileImage(file: File) {
 export async function removeFounderProfileImage() {
   const response = await apiClient.delete<SettingsResponse>(
     "/admin/settings/founder-profile/image",
+  );
+
+  return requireSettings(response.data);
+}
+
+export async function updateHomePageSettings(payload: HomePageSettingsPayload) {
+  const response = await apiClient.patch<SettingsResponse>(
+    "/admin/settings/home-page",
+    payload,
+  );
+
+  return requireSettings(response.data);
+}
+
+export async function uploadHomeCarouselImage(file: File, altText: string, caption: string) {
+  const formData = new FormData();
+  formData.append("image", file);
+  formData.append("altText", altText);
+  formData.append("caption", caption);
+
+  const response = await apiClient.post<SettingsResponse>(
+    "/admin/settings/home-page/carousel-images",
+    formData,
+    {
+      headers: { "Content-Type": "multipart/form-data" },
+    },
+  );
+
+  return requireSettings(response.data);
+}
+
+export async function updateHomeCarouselImage(
+  imageId: string,
+  payload: { altText: string; caption?: string },
+) {
+  const response = await apiClient.patch<SettingsResponse>(
+    `/admin/settings/home-page/carousel-images/${imageId}`,
+    payload,
+  );
+
+  return requireSettings(response.data);
+}
+
+export async function deleteHomeCarouselImage(imageId: string) {
+  const response = await apiClient.delete<SettingsResponse>(
+    `/admin/settings/home-page/carousel-images/${imageId}`,
+  );
+
+  return requireSettings(response.data);
+}
+
+export async function reorderHomeCarouselImages(imageIds: string[]) {
+  const response = await apiClient.patch<SettingsResponse>(
+    "/admin/settings/home-page/carousel-images/reorder",
+    { imageIds },
   );
 
   return requireSettings(response.data);
