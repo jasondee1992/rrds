@@ -2,44 +2,36 @@ import { CheckCircle2, Target, Telescope, UsersRound } from "lucide-react";
 import { ContactCTA } from "../../components/public/ContactCTA";
 import { FounderProfileSection } from "../../components/public/FounderProfileSection";
 import { SectionTitle } from "../../components/public/SectionTitle";
-import { benefits } from "../../data/publicData";
+import { useSiteSettings } from "../../contexts/SiteSettingsContext";
 
-const valueItems = [
-  "Quality-focused work",
-  "Clear communication",
-  "Reliable scheduling",
-  "Practical service recommendations",
-];
+const whyIcons = [CheckCircle2, Target, Telescope, UsersRound];
 
 export function AboutPage() {
+  const { settings } = useSiteSettings();
+  const { about } = settings;
+
   return (
     <main>
       <section className="bg-white px-6 py-16 sm:py-20">
         <div className="mx-auto max-w-7xl">
           <SectionTitle
-            description="Placeholder company content for RRDS Airconditioning Services. Replace this copy with approved company information when available."
-            eyebrow="About Us"
-            title="Air-Conditioning Service Built Around Comfort and Reliability"
+            description={about.heroDescription}
+            eyebrow={about.heroEyebrow}
+            title={about.heroTitle}
           />
           <div className="mt-10 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
             <article className="rounded-lg border border-slate-200 bg-slate-50 p-6 sm:p-8">
-              <h2 className="text-2xl font-bold text-slate-950">Company Introduction</h2>
-              <p className="mt-4 text-base leading-7 text-slate-700">
-                RRDS Airconditioning Services provides frontend placeholder content here for
-                installation, maintenance, cleaning, repair, troubleshooting, and replacement
-                support. The final company description should be supplied and approved before
-                launch.
-              </p>
-              <p className="mt-4 text-base leading-7 text-slate-700">
-                This page intentionally avoids claims about company history, certifications,
-                awards, or years of experience until verified content is provided.
-              </p>
+              <h2 className="text-2xl font-bold text-slate-950">{about.introTitle}</h2>
+              {about.introParagraphs.map((paragraph) => (
+                <p className="mt-4 text-base leading-7 text-slate-700" key={paragraph}>
+                  {paragraph}
+                </p>
+              ))}
             </article>
             <aside className="rounded-lg bg-slate-950 p-6 text-white sm:p-8">
-              <h2 className="text-2xl font-bold">Service Commitment</h2>
+              <h2 className="text-2xl font-bold">{about.commitmentTitle}</h2>
               <p className="mt-4 text-base leading-7 text-slate-200">
-                RRDS is positioned as a professional air-conditioning service provider focused
-                on quality, reliable response, residential support, and commercial support.
+                {about.commitmentDescription}
               </p>
             </aside>
           </div>
@@ -52,18 +44,16 @@ export function AboutPage() {
         <div className="mx-auto grid max-w-7xl gap-6 md:grid-cols-2">
           <article className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
             <Target aria-hidden="true" className="h-10 w-10 text-blue-700" />
-            <h2 className="mt-5 text-2xl font-bold text-slate-950">Mission</h2>
+            <h2 className="mt-5 text-2xl font-bold text-slate-950">{about.missionTitle}</h2>
             <p className="mt-4 text-base leading-7 text-slate-700">
-              Placeholder mission statement: provide dependable air-conditioning service that
-              helps customers maintain safe, comfortable, and efficient indoor spaces.
+              {about.missionDescription}
             </p>
           </article>
           <article className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
             <Telescope aria-hidden="true" className="h-10 w-10 text-blue-700" />
-            <h2 className="mt-5 text-2xl font-bold text-slate-950">Vision</h2>
+            <h2 className="mt-5 text-2xl font-bold text-slate-950">{about.visionTitle}</h2>
             <p className="mt-4 text-base leading-7 text-slate-700">
-              Placeholder vision statement: become a trusted air-conditioning service partner
-              for customers who value professionalism, clarity, and reliable support.
+              {about.visionDescription}
             </p>
           </article>
         </div>
@@ -72,12 +62,12 @@ export function AboutPage() {
       <section className="bg-white px-6 py-16 sm:py-20">
         <div className="mx-auto max-w-7xl">
           <SectionTitle
-            description="Editable values for Phase 2 layout approval. Replace with approved RRDS wording later."
-            eyebrow="Core Values"
-            title="What Guides the Service"
+            description={about.valuesDescription}
+            eyebrow={about.valuesEyebrow}
+            title={about.valuesTitle}
           />
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {valueItems.map((item) => (
+            {about.coreValues.map((item) => (
               <article className="rounded-lg border border-slate-200 bg-slate-50 p-5" key={item}>
                 <CheckCircle2 aria-hidden="true" className="h-7 w-7 text-blue-700" />
                 <h2 className="mt-4 text-base font-bold text-slate-950">{item}</h2>
@@ -90,18 +80,22 @@ export function AboutPage() {
       <section className="bg-slate-50 px-6 py-16 sm:py-20">
         <div className="mx-auto max-w-7xl">
           <SectionTitle
-            description="Public-facing reasons customers may choose RRDS, written as placeholder content pending final approval."
-            eyebrow="Why Choose RRDS"
-            title="Practical Support for Aircon Service Needs"
+            description={about.whyDescription}
+            eyebrow={about.whyEyebrow}
+            title={about.whyTitle}
           />
           <div className="mt-10 grid gap-6 md:grid-cols-2">
-            {benefits.map((benefit) => (
-              <article className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm" key={benefit.title}>
-                <benefit.Icon aria-hidden="true" className="h-8 w-8 text-blue-700" />
-                <h2 className="mt-4 text-xl font-bold text-slate-950">{benefit.title}</h2>
-                <p className="mt-3 text-sm leading-6 text-slate-700">{benefit.description}</p>
+            {about.whyItems.map((item, index) => {
+              const Icon = whyIcons[index % whyIcons.length];
+
+              return (
+              <article className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm" key={item.title}>
+                <Icon aria-hidden="true" className="h-8 w-8 text-blue-700" />
+                <h2 className="mt-4 text-xl font-bold text-slate-950">{item.title}</h2>
+                <p className="mt-3 text-sm leading-6 text-slate-700">{item.description}</p>
               </article>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -112,11 +106,9 @@ export function AboutPage() {
             <UsersRound aria-hidden="true" className="h-10 w-10" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-slate-950">Service Commitment</h2>
+            <h2 className="text-2xl font-bold text-slate-950">{about.finalTitle}</h2>
             <p className="mt-4 text-base leading-7 text-slate-700">
-              RRDS service content should remain easy to edit as real operational details are
-              approved. This Phase 2 layout keeps the public message focused on quality work,
-              reliability, residential service, commercial service, and customer support.
+              {about.finalDescription}
             </p>
           </div>
         </div>

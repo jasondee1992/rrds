@@ -338,6 +338,27 @@ model CompanySetting {
   homeTestimonialsEyebrow      String?
   homeTestimonialsTitle        String?
   homeTestimonialsDescription  String?
+  aboutHeroEyebrow             String?
+  aboutHeroTitle               String?
+  aboutHeroDescription         String?
+  aboutIntroTitle              String?
+  aboutIntroParagraphs         String?
+  aboutCommitmentTitle         String?
+  aboutCommitmentDescription   String?
+  aboutMissionTitle            String?
+  aboutMissionDescription      String?
+  aboutVisionTitle             String?
+  aboutVisionDescription       String?
+  aboutValuesEyebrow           String?
+  aboutValuesTitle             String?
+  aboutValuesDescription       String?
+  aboutCoreValues              String?
+  aboutWhyEyebrow              String?
+  aboutWhyTitle                String?
+  aboutWhyDescription          String?
+  aboutWhyItems                String?
+  aboutFinalTitle              String?
+  aboutFinalDescription        String?
   quotationValidityDays        Int                 @default(30)
   estimateValidityDays         Int                 @default(7)
   taxRate                      Decimal             @default(0)

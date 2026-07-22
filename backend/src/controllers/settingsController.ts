@@ -7,6 +7,7 @@ import {
   removeFounderImage,
   reorderHomeCarouselImages,
   updateHomeCarouselImage,
+  updateAboutPageSettings,
   updateCompanyInformation,
   updateFounderProfile,
   updateHomePageSettings,
@@ -17,6 +18,7 @@ import {
 import { errorResponse, successResponse } from "../utils/apiResponse";
 import {
   companyInformationSchema,
+  aboutPageSettingsSchema,
   founderProfileSchema,
   homeCarouselImageParamSchema,
   homeCarouselImageSchema,
@@ -103,6 +105,23 @@ export async function patchHomePageSettings(req: Request, res: Response) {
   );
 
   res.json(successResponse("Home page settings saved", { settings }));
+}
+
+export async function patchAboutPageSettings(req: Request, res: Response) {
+  const parsedBody = aboutPageSettingsSchema.safeParse(req.body);
+
+  if (!parsedBody.success) {
+    res.status(400).json(errorResponse("Invalid about page settings."));
+    return;
+  }
+
+  const settings = await updateAboutPageSettings(
+    parsedBody.data,
+    req.admin?.id ?? "",
+    req.admin?.role ?? AdminRole.STAFF,
+  );
+
+  res.json(successResponse("About page settings saved", { settings }));
 }
 
 export async function postFounderProfileImage(req: Request, res: Response) {

@@ -7,6 +7,7 @@ import {
   deleteHomeCarouselImageController,
   getAdminPublicProfileSettingsController,
   getPublicSiteSettingsController,
+  patchAboutPageSettings,
   patchHomeCarouselImage,
   patchHomeCarouselImageOrder,
   patchCompanyInformation,
@@ -60,6 +61,11 @@ settingsRoutes.patch(
   "/admin/settings/home-page",
   requireSettingsWrite,
   patchHomePageSettings,
+);
+settingsRoutes.patch(
+  "/admin/settings/about-page",
+  requireSettingsWrite,
+  patchAboutPageSettings,
 );
 settingsRoutes.post(
   "/admin/settings/founder-profile/image",

@@ -52,4 +52,30 @@ export type SiteSettings = {
       sortOrder: number;
     }>;
   };
+  about: {
+    heroEyebrow: string;
+    heroTitle: string;
+    heroDescription: string;
+    introTitle: string;
+    introParagraphs: string[];
+    commitmentTitle: string;
+    commitmentDescription: string;
+    missionTitle: string;
+    missionDescription: string;
+    visionTitle: string;
+    visionDescription: string;
+    valuesEyebrow: string;
+    valuesTitle: string;
+    valuesDescription: string;
+    coreValues: string[];
+    whyEyebrow: string;
+    whyTitle: string;
+    whyDescription: string;
+    whyItems: Array<{
+      title: string;
+      description: string;
+    }>;
+    finalTitle: string;
+    finalDescription: string;
+  };
 };

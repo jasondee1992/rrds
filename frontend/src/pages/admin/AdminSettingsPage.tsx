@@ -23,6 +23,7 @@ import {
   updateCompanyInformation,
   updateFounderProfile,
   updateHomeCarouselImage,
+  updateAboutPageSettings,
   updateHomePageSettings,
   updateSocialLinks,
   uploadHomeCarouselImage,
@@ -79,13 +80,40 @@ type HomeForm = {
   testimonialsDescription: string;
 };
 
-type SettingsTab = "company" | "social" | "home" | "founder";
+type AboutForm = {
+  heroEyebrow: string;
+  heroTitle: string;
+  heroDescription: string;
+  introTitle: string;
+  introParagraphs: string[];
+  commitmentTitle: string;
+  commitmentDescription: string;
+  missionTitle: string;
+  missionDescription: string;
+  visionTitle: string;
+  visionDescription: string;
+  valuesEyebrow: string;
+  valuesTitle: string;
+  valuesDescription: string;
+  coreValues: string[];
+  whyEyebrow: string;
+  whyTitle: string;
+  whyDescription: string;
+  whyItems: Array<{
+    title: string;
+    description: string;
+  }>;
+  finalTitle: string;
+  finalDescription: string;
+};
+
+type SettingsTab = "company" | "social" | "home" | "about" | "founder";
 
 const fieldClass =
   "mt-2 min-h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20 disabled:bg-slate-100 disabled:text-slate-500";
 
 function getActiveSettingsTab(value: string | null): SettingsTab {
-  if (value === "social" || value === "home" || value === "founder") {
+  if (value === "social" || value === "home" || value === "about" || value === "founder") {
     return value;
   }
 
@@ -161,6 +189,32 @@ function buildHomeForm(settings: SiteSettings): HomeForm {
   };
 }
 
+function buildAboutForm(settings: SiteSettings): AboutForm {
+  return {
+    heroEyebrow: settings.about.heroEyebrow,
+    heroTitle: settings.about.heroTitle,
+    heroDescription: settings.about.heroDescription,
+    introTitle: settings.about.introTitle,
+    introParagraphs: settings.about.introParagraphs,
+    commitmentTitle: settings.about.commitmentTitle,
+    commitmentDescription: settings.about.commitmentDescription,
+    missionTitle: settings.about.missionTitle,
+    missionDescription: settings.about.missionDescription,
+    visionTitle: settings.about.visionTitle,
+    visionDescription: settings.about.visionDescription,
+    valuesEyebrow: settings.about.valuesEyebrow,
+    valuesTitle: settings.about.valuesTitle,
+    valuesDescription: settings.about.valuesDescription,
+    coreValues: settings.about.coreValues,
+    whyEyebrow: settings.about.whyEyebrow,
+    whyTitle: settings.about.whyTitle,
+    whyDescription: settings.about.whyDescription,
+    whyItems: settings.about.whyItems,
+    finalTitle: settings.about.finalTitle,
+    finalDescription: settings.about.finalDescription,
+  };
+}
+
 function notifyPublicSettingsUpdated() {
   window.dispatchEvent(new Event("rrds:site-settings-updated"));
 }
@@ -197,6 +251,7 @@ export function AdminSettingsPage() {
   const [socialForm, setSocialForm] = useState<SocialForm | null>(null);
   const [founderForm, setFounderForm] = useState<FounderForm | null>(null);
   const [homeForm, setHomeForm] = useState<HomeForm | null>(null);
+  const [aboutForm, setAboutForm] = useState<AboutForm | null>(null);
   const [carouselAltText, setCarouselAltText] = useState("Professional air-conditioning technician");
   const [carouselCaption, setCarouselCaption] = useState("");
   const [newExpertise, setNewExpertise] = useState("");
@@ -221,6 +276,7 @@ export function AdminSettingsPage() {
       setSocialForm(buildSocialForm(result));
       setFounderForm(buildFounderForm(result));
       setHomeForm(buildHomeForm(result));
+      setAboutForm(buildAboutForm(result));
       setErrorMessage("");
     } catch (error) {
       setErrorMessage(getSafeApiErrorMessage(error, "Unable to load public settings."));
@@ -252,6 +308,7 @@ export function AdminSettingsPage() {
     setSocialForm(buildSocialForm(result));
     setFounderForm(buildFounderForm(result));
     setHomeForm(buildHomeForm(result));
+    setAboutForm(buildAboutForm(result));
     notifyPublicSettingsUpdated();
   }
 
@@ -304,6 +361,23 @@ export function AdminSettingsPage() {
       setErrorMessage("");
     } catch (error) {
       setErrorMessage(getSafeApiErrorMessage(error, "Unable to save home page settings."));
+    } finally {
+      setSavingSection("");
+    }
+  }
+
+  async function saveAboutPage() {
+    if (!aboutForm || !canEdit) return;
+    setSavingSection("about");
+    setMessage("");
+
+    try {
+      const result = await updateAboutPageSettings(aboutForm);
+      applySettings(result);
+      setMessage("About page settings saved.");
+      setErrorMessage("");
+    } catch (error) {
+      setErrorMessage(getSafeApiErrorMessage(error, "Unable to save about page settings."));
     } finally {
       setSavingSection("");
     }
@@ -496,7 +570,64 @@ export function AdminSettingsPage() {
     setFounderForm({ ...founderForm, founderExpertise: nextItems });
   }
 
-  if (isLoading || !companyForm || !socialForm || !founderForm || !homeForm) {
+  function updateAboutList(
+    key: "introParagraphs" | "coreValues",
+    index: number,
+    value: string,
+  ) {
+    if (!aboutForm) return;
+    const nextItems = [...aboutForm[key]];
+    nextItems[index] = value;
+    setAboutForm({ ...aboutForm, [key]: nextItems });
+  }
+
+  function addAboutListItem(key: "introParagraphs" | "coreValues", value: string) {
+    if (!aboutForm) return;
+    setAboutForm({ ...aboutForm, [key]: [...aboutForm[key], value] });
+  }
+
+  function removeAboutListItem(key: "introParagraphs" | "coreValues", index: number) {
+    if (!aboutForm || aboutForm[key].length <= 1) return;
+    setAboutForm({
+      ...aboutForm,
+      [key]: aboutForm[key].filter((_, itemIndex) => itemIndex !== index),
+    });
+  }
+
+  function updateAboutWhyItem(
+    index: number,
+    field: "title" | "description",
+    value: string,
+  ) {
+    if (!aboutForm) return;
+    const nextItems = [...aboutForm.whyItems];
+    nextItems[index] = { ...nextItems[index], [field]: value };
+    setAboutForm({ ...aboutForm, whyItems: nextItems });
+  }
+
+  function addAboutWhyItem() {
+    if (!aboutForm || aboutForm.whyItems.length >= 6) return;
+    setAboutForm({
+      ...aboutForm,
+      whyItems: [
+        ...aboutForm.whyItems,
+        {
+          title: "New reason",
+          description: "Add a short customer-facing reason to choose RRDS.",
+        },
+      ],
+    });
+  }
+
+  function removeAboutWhyItem(index: number) {
+    if (!aboutForm || aboutForm.whyItems.length <= 1) return;
+    setAboutForm({
+      ...aboutForm,
+      whyItems: aboutForm.whyItems.filter((_, itemIndex) => itemIndex !== index),
+    });
+  }
+
+  if (isLoading || !companyForm || !socialForm || !founderForm || !homeForm || !aboutForm) {
     return (
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <div className="space-y-4">
@@ -979,6 +1110,348 @@ export function AdminSettingsPage() {
               ))}
             </div>
           </div>
+        </div>
+      </section>
+      ) : null}
+
+      {activeTab === "about" ? (
+      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <SectionHeader
+          Icon={Building2}
+          description="Manage the public About Us page text without changing frontend code."
+          title="About Page"
+        />
+
+        <div className="mt-6 grid gap-6">
+          <div>
+            <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500">
+              Page Header
+            </h3>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <label className="text-sm font-semibold text-slate-800">
+                Eyebrow
+                <input
+                  className={fieldClass}
+                  disabled={!canEdit}
+                  onChange={(event) =>
+                    setAboutForm({ ...aboutForm, heroEyebrow: event.target.value })
+                  }
+                  value={aboutForm.heroEyebrow}
+                />
+              </label>
+              <label className="text-sm font-semibold text-slate-800">
+                Title
+                <input
+                  className={fieldClass}
+                  disabled={!canEdit}
+                  onChange={(event) =>
+                    setAboutForm({ ...aboutForm, heroTitle: event.target.value })
+                  }
+                  value={aboutForm.heroTitle}
+                />
+              </label>
+              <label className="text-sm font-semibold text-slate-800 md:col-span-2">
+                Description
+                <textarea
+                  className={`${fieldClass} min-h-24 py-3`}
+                  disabled={!canEdit}
+                  onChange={(event) =>
+                    setAboutForm({ ...aboutForm, heroDescription: event.target.value })
+                  }
+                  value={aboutForm.heroDescription}
+                />
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500">
+              Company Introduction
+            </h3>
+            <label className="mt-4 block text-sm font-semibold text-slate-800">
+              Section title
+              <input
+                className={fieldClass}
+                disabled={!canEdit}
+                onChange={(event) =>
+                  setAboutForm({ ...aboutForm, introTitle: event.target.value })
+                }
+                value={aboutForm.introTitle}
+              />
+            </label>
+            <div className="mt-4 grid gap-3">
+              {aboutForm.introParagraphs.map((paragraph, index) => (
+                <div className="grid gap-2 sm:grid-cols-[1fr_auto]" key={`intro-${index}`}>
+                  <textarea
+                    aria-label={`Company introduction paragraph ${index + 1}`}
+                    className={`${fieldClass} min-h-24 py-3`}
+                    disabled={!canEdit}
+                    onChange={(event) =>
+                      updateAboutList("introParagraphs", index, event.target.value)
+                    }
+                    value={paragraph}
+                  />
+                  <button
+                    aria-label="Remove introduction paragraph"
+                    className="mt-2 inline-flex h-10 w-10 items-center justify-center rounded-md border border-red-300 text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                    disabled={!canEdit || aboutForm.introParagraphs.length <= 1}
+                    onClick={() => removeAboutListItem("introParagraphs", index)}
+                    type="button"
+                  >
+                    <Trash2 aria-hidden="true" className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button
+              className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-md border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+              disabled={!canEdit || aboutForm.introParagraphs.length >= 4}
+              onClick={() => addAboutListItem("introParagraphs", "New company introduction paragraph.")}
+              type="button"
+            >
+              <Plus aria-hidden="true" className="h-4 w-4" />
+              Add Paragraph
+            </button>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="text-sm font-semibold text-slate-800">
+              Commitment title
+              <input
+                className={fieldClass}
+                disabled={!canEdit}
+                onChange={(event) =>
+                  setAboutForm({ ...aboutForm, commitmentTitle: event.target.value })
+                }
+                value={aboutForm.commitmentTitle}
+              />
+            </label>
+            <label className="text-sm font-semibold text-slate-800">
+              Commitment description
+              <textarea
+                className={`${fieldClass} min-h-24 py-3`}
+                disabled={!canEdit}
+                onChange={(event) =>
+                  setAboutForm({ ...aboutForm, commitmentDescription: event.target.value })
+                }
+                value={aboutForm.commitmentDescription}
+              />
+            </label>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500">
+              Mission and Vision
+            </h3>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <div className="rounded-md border border-slate-200 p-4">
+                <label className="text-sm font-semibold text-slate-800">
+                  Mission title
+                  <input
+                    className={fieldClass}
+                    disabled={!canEdit}
+                    onChange={(event) =>
+                      setAboutForm({ ...aboutForm, missionTitle: event.target.value })
+                    }
+                    value={aboutForm.missionTitle}
+                  />
+                </label>
+                <label className="mt-3 block text-sm font-semibold text-slate-800">
+                  Mission description
+                  <textarea
+                    className={`${fieldClass} min-h-28 py-3`}
+                    disabled={!canEdit}
+                    onChange={(event) =>
+                      setAboutForm({ ...aboutForm, missionDescription: event.target.value })
+                    }
+                    value={aboutForm.missionDescription}
+                  />
+                </label>
+              </div>
+              <div className="rounded-md border border-slate-200 p-4">
+                <label className="text-sm font-semibold text-slate-800">
+                  Vision title
+                  <input
+                    className={fieldClass}
+                    disabled={!canEdit}
+                    onChange={(event) =>
+                      setAboutForm({ ...aboutForm, visionTitle: event.target.value })
+                    }
+                    value={aboutForm.visionTitle}
+                  />
+                </label>
+                <label className="mt-3 block text-sm font-semibold text-slate-800">
+                  Vision description
+                  <textarea
+                    className={`${fieldClass} min-h-28 py-3`}
+                    disabled={!canEdit}
+                    onChange={(event) =>
+                      setAboutForm({ ...aboutForm, visionDescription: event.target.value })
+                    }
+                    value={aboutForm.visionDescription}
+                  />
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500">
+              Core Values
+            </h3>
+            <div className="mt-4 grid gap-4 md:grid-cols-3">
+              {[
+                ["valuesEyebrow", "Eyebrow"],
+                ["valuesTitle", "Title"],
+                ["valuesDescription", "Description"],
+              ].map(([key, label]) => (
+                <label className="text-sm font-semibold text-slate-800" key={key}>
+                  {label}
+                  <input
+                    className={fieldClass}
+                    disabled={!canEdit}
+                    onChange={(event) =>
+                      setAboutForm({ ...aboutForm, [key]: event.target.value })
+                    }
+                    value={String(aboutForm[key as keyof AboutForm])}
+                  />
+                </label>
+              ))}
+            </div>
+            <div className="mt-4 grid gap-3">
+              {aboutForm.coreValues.map((value, index) => (
+                <div className="grid gap-2 sm:grid-cols-[1fr_auto]" key={`core-value-${index}`}>
+                  <input
+                    aria-label={`Core value ${index + 1}`}
+                    className={fieldClass}
+                    disabled={!canEdit}
+                    onChange={(event) => updateAboutList("coreValues", index, event.target.value)}
+                    value={value}
+                  />
+                  <button
+                    aria-label="Remove core value"
+                    className="mt-2 inline-flex h-10 w-10 items-center justify-center rounded-md border border-red-300 text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                    disabled={!canEdit || aboutForm.coreValues.length <= 1}
+                    onClick={() => removeAboutListItem("coreValues", index)}
+                    type="button"
+                  >
+                    <Trash2 aria-hidden="true" className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button
+              className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-md border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+              disabled={!canEdit || aboutForm.coreValues.length >= 8}
+              onClick={() => addAboutListItem("coreValues", "New core value")}
+              type="button"
+            >
+              <Plus aria-hidden="true" className="h-4 w-4" />
+              Add Value
+            </button>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500">
+              Why Choose RRDS
+            </h3>
+            <div className="mt-4 grid gap-4 md:grid-cols-3">
+              {[
+                ["whyEyebrow", "Eyebrow"],
+                ["whyTitle", "Title"],
+                ["whyDescription", "Description"],
+              ].map(([key, label]) => (
+                <label className="text-sm font-semibold text-slate-800" key={key}>
+                  {label}
+                  <input
+                    className={fieldClass}
+                    disabled={!canEdit}
+                    onChange={(event) =>
+                      setAboutForm({ ...aboutForm, [key]: event.target.value })
+                    }
+                    value={String(aboutForm[key as keyof AboutForm])}
+                  />
+                </label>
+              ))}
+            </div>
+            <div className="mt-4 grid gap-4 lg:grid-cols-2">
+              {aboutForm.whyItems.map((item, index) => (
+                <article className="rounded-md border border-slate-200 p-4" key={`why-${index}`}>
+                  <div className="grid gap-3">
+                    <input
+                      aria-label={`Why choose item ${index + 1} title`}
+                      className={fieldClass}
+                      disabled={!canEdit}
+                      onChange={(event) => updateAboutWhyItem(index, "title", event.target.value)}
+                      value={item.title}
+                    />
+                    <textarea
+                      aria-label={`Why choose item ${index + 1} description`}
+                      className={`${fieldClass} min-h-24 py-3`}
+                      disabled={!canEdit}
+                      onChange={(event) =>
+                        updateAboutWhyItem(index, "description", event.target.value)
+                      }
+                      value={item.description}
+                    />
+                    <button
+                      className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-md border border-red-300 px-3 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400 sm:w-fit"
+                      disabled={!canEdit || aboutForm.whyItems.length <= 1}
+                      onClick={() => removeAboutWhyItem(index)}
+                      type="button"
+                    >
+                      <Trash2 aria-hidden="true" className="h-4 w-4" />
+                      Remove
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+            <button
+              className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-md border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+              disabled={!canEdit || aboutForm.whyItems.length >= 6}
+              onClick={addAboutWhyItem}
+              type="button"
+            >
+              <Plus aria-hidden="true" className="h-4 w-4" />
+              Add Reason
+            </button>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="text-sm font-semibold text-slate-800">
+              Final section title
+              <input
+                className={fieldClass}
+                disabled={!canEdit}
+                onChange={(event) =>
+                  setAboutForm({ ...aboutForm, finalTitle: event.target.value })
+                }
+                value={aboutForm.finalTitle}
+              />
+            </label>
+            <label className="text-sm font-semibold text-slate-800">
+              Final section description
+              <textarea
+                className={`${fieldClass} min-h-24 py-3`}
+                disabled={!canEdit}
+                onChange={(event) =>
+                  setAboutForm({ ...aboutForm, finalDescription: event.target.value })
+                }
+                value={aboutForm.finalDescription}
+              />
+            </label>
+          </div>
+
+          <button
+            className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-md bg-blue-700 px-4 text-sm font-semibold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-slate-400 sm:w-fit"
+            disabled={!canEdit || isSaving}
+            onClick={() => void saveAboutPage()}
+            type="button"
+          >
+            <Save aria-hidden="true" className="h-4 w-4" />
+            {savingSection === "about" ? "Saving..." : "Save About Page"}
+          </button>
         </div>
       </section>
       ) : null}

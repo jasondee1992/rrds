@@ -5,6 +5,7 @@ import { AdminRole, Prisma } from "@prisma/client";
 import { prisma } from "../config/prisma";
 import { AppError } from "../utils/AppError";
 import type {
+  AboutPageSettingsInput,
   CompanyInformationInput,
   FounderProfileInput,
   HomeCarouselImageInput,
@@ -35,6 +36,41 @@ const defaultHomeStats = [
   { label: "Residential Support", value: "Homes" },
   { label: "Commercial Support", value: "Businesses" },
   { label: "Service Focus", value: "Cooling Comfort" },
+];
+
+const defaultAboutIntroParagraphs = [
+  "RRDS Airconditioning Services provides installation, maintenance, cleaning, repair, troubleshooting, and replacement support for residential and commercial air-conditioning needs.",
+  "This About page content is editable from the admin dashboard so approved company details can be published without changing the code.",
+];
+
+const defaultAboutCoreValues = [
+  "Quality-focused work",
+  "Clear communication",
+  "Reliable scheduling",
+  "Practical service recommendations",
+];
+
+const defaultAboutWhyItems = [
+  {
+    title: "Quality Service",
+    description:
+      "Careful workmanship and dependable service standards for every air-conditioning job.",
+  },
+  {
+    title: "Expert Technicians",
+    description:
+      "Skilled technicians ready to inspect, maintain, clean, repair, and install aircon units.",
+  },
+  {
+    title: "Fair Pricing",
+    description:
+      "Clear service recommendations and practical pricing for residential and commercial needs.",
+  },
+  {
+    title: "Customer Satisfaction",
+    description:
+      "Responsive support focused on comfort, reliability, and long-term customer confidence.",
+  },
 ];
 
 const defaultSettings = {
@@ -89,6 +125,34 @@ const defaultSettings = {
   homeTestimonialsTitle: "What Customers May Say",
   homeTestimonialsDescription:
     "Placeholder testimonials for layout approval. Replace with verified customer feedback later.",
+  aboutHeroEyebrow: "About Us",
+  aboutHeroTitle: "Air-Conditioning Service Built Around Comfort and Reliability",
+  aboutHeroDescription:
+    "Learn more about RRDS Airconditioning Services, the team approach, and the service standards behind each residential and commercial air-conditioning project.",
+  aboutIntroTitle: "Company Introduction",
+  aboutIntroParagraphs: JSON.stringify(defaultAboutIntroParagraphs),
+  aboutCommitmentTitle: "Service Commitment",
+  aboutCommitmentDescription:
+    "RRDS is positioned as a professional air-conditioning service provider focused on quality, reliable response, residential support, and commercial support.",
+  aboutMissionTitle: "Mission",
+  aboutMissionDescription:
+    "Provide dependable air-conditioning service that helps customers maintain safe, comfortable, and efficient indoor spaces.",
+  aboutVisionTitle: "Vision",
+  aboutVisionDescription:
+    "Become a trusted air-conditioning service partner for customers who value professionalism, clarity, and reliable support.",
+  aboutValuesEyebrow: "Core Values",
+  aboutValuesTitle: "What Guides the Service",
+  aboutValuesDescription:
+    "Editable public values that describe how RRDS approaches customer work and service quality.",
+  aboutCoreValues: JSON.stringify(defaultAboutCoreValues),
+  aboutWhyEyebrow: "Why Choose RRDS",
+  aboutWhyTitle: "Practical Support for Aircon Service Needs",
+  aboutWhyDescription:
+    "Public-facing reasons customers may choose RRDS for residential and commercial air-conditioning work.",
+  aboutWhyItems: JSON.stringify(defaultAboutWhyItems),
+  aboutFinalTitle: "Service Commitment",
+  aboutFinalDescription:
+    "RRDS service content should remain easy to edit as real operational details are approved. This page keeps the public message focused on quality work, reliability, residential service, commercial service, and customer support.",
   quotationValidityDays: 30,
   estimateValidityDays: 7,
   taxRate: new Prisma.Decimal(0),
@@ -156,6 +220,32 @@ export type PublicSiteSettings = {
       caption?: string;
       sortOrder: number;
     }>;
+  };
+  about: {
+    heroEyebrow: string;
+    heroTitle: string;
+    heroDescription: string;
+    introTitle: string;
+    introParagraphs: string[];
+    commitmentTitle: string;
+    commitmentDescription: string;
+    missionTitle: string;
+    missionDescription: string;
+    visionTitle: string;
+    visionDescription: string;
+    valuesEyebrow: string;
+    valuesTitle: string;
+    valuesDescription: string;
+    coreValues: string[];
+    whyEyebrow: string;
+    whyTitle: string;
+    whyDescription: string;
+    whyItems: Array<{
+      title: string;
+      description: string;
+    }>;
+    finalTitle: string;
+    finalDescription: string;
   };
 };
 
@@ -230,6 +320,55 @@ function parseHomeStats(value: string | null | undefined) {
     return stats.length > 0 ? stats : defaultHomeStats;
   } catch {
     return defaultHomeStats;
+  }
+}
+
+function parseTextList(value: string | null | undefined, fallback: string[], maxLength: number, maxItems: number) {
+  try {
+    const parsed = JSON.parse(value ?? "[]");
+
+    if (!Array.isArray(parsed)) {
+      return fallback;
+    }
+
+    const items = parsed
+      .filter((item): item is string => typeof item === "string")
+      .map((item) => cleanText(item, "", maxLength))
+      .filter(Boolean)
+      .slice(0, maxItems);
+
+    return items.length > 0 ? items : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function parseAboutWhyItems(value: string | null | undefined) {
+  try {
+    const parsed = JSON.parse(value ?? "[]");
+
+    if (!Array.isArray(parsed)) {
+      return defaultAboutWhyItems;
+    }
+
+    const items = parsed
+      .filter(
+        (item): item is { title: unknown; description: unknown } =>
+          typeof item === "object" &&
+          item !== null &&
+          "title" in item &&
+          "description" in item,
+      )
+      .map((item) => ({
+        title: cleanText(String(item.title), "", 80),
+        description: cleanText(String(item.description), "", 220),
+      }))
+      .filter((item) => item.title && item.description)
+      .slice(0, 6);
+
+    return items.length > 0 ? items : defaultAboutWhyItems;
+  } catch {
+    return defaultAboutWhyItems;
   }
 }
 
@@ -366,6 +505,66 @@ function mapPublicSettings(setting: CompanySettingRecord): PublicSiteSettings {
           : {}),
         sortOrder: image.sortOrder,
       })),
+    },
+    about: {
+      heroEyebrow: cleanText(setting.aboutHeroEyebrow, defaultSettings.aboutHeroEyebrow, 80),
+      heroTitle: cleanText(setting.aboutHeroTitle, defaultSettings.aboutHeroTitle, 180),
+      heroDescription: cleanText(
+        setting.aboutHeroDescription,
+        defaultSettings.aboutHeroDescription,
+        400,
+      ),
+      introTitle: cleanText(setting.aboutIntroTitle, defaultSettings.aboutIntroTitle, 140),
+      introParagraphs: parseTextList(
+        setting.aboutIntroParagraphs,
+        defaultAboutIntroParagraphs,
+        700,
+        4,
+      ),
+      commitmentTitle: cleanText(
+        setting.aboutCommitmentTitle,
+        defaultSettings.aboutCommitmentTitle,
+        140,
+      ),
+      commitmentDescription: cleanText(
+        setting.aboutCommitmentDescription,
+        defaultSettings.aboutCommitmentDescription,
+        700,
+      ),
+      missionTitle: cleanText(setting.aboutMissionTitle, defaultSettings.aboutMissionTitle, 80),
+      missionDescription: cleanText(
+        setting.aboutMissionDescription,
+        defaultSettings.aboutMissionDescription,
+        700,
+      ),
+      visionTitle: cleanText(setting.aboutVisionTitle, defaultSettings.aboutVisionTitle, 80),
+      visionDescription: cleanText(
+        setting.aboutVisionDescription,
+        defaultSettings.aboutVisionDescription,
+        700,
+      ),
+      valuesEyebrow: cleanText(setting.aboutValuesEyebrow, defaultSettings.aboutValuesEyebrow, 80),
+      valuesTitle: cleanText(setting.aboutValuesTitle, defaultSettings.aboutValuesTitle, 140),
+      valuesDescription: cleanText(
+        setting.aboutValuesDescription,
+        defaultSettings.aboutValuesDescription,
+        300,
+      ),
+      coreValues: parseTextList(setting.aboutCoreValues, defaultAboutCoreValues, 100, 8),
+      whyEyebrow: cleanText(setting.aboutWhyEyebrow, defaultSettings.aboutWhyEyebrow, 80),
+      whyTitle: cleanText(setting.aboutWhyTitle, defaultSettings.aboutWhyTitle, 140),
+      whyDescription: cleanText(
+        setting.aboutWhyDescription,
+        defaultSettings.aboutWhyDescription,
+        300,
+      ),
+      whyItems: parseAboutWhyItems(setting.aboutWhyItems),
+      finalTitle: cleanText(setting.aboutFinalTitle, defaultSettings.aboutFinalTitle, 140),
+      finalDescription: cleanText(
+        setting.aboutFinalDescription,
+        defaultSettings.aboutFinalDescription,
+        700,
+      ),
     },
   };
 }
@@ -744,6 +943,95 @@ export async function updateHomePageSettings(
 
   invalidatePublicSettingsCache();
   await logSettingsAudit(adminId, "HOME_PAGE_SETTINGS_CHANGED");
+
+  return mapAdminSettings(updated);
+}
+
+export async function updateAboutPageSettings(
+  input: AboutPageSettingsInput,
+  adminId: string,
+  role: AdminRole,
+) {
+  ensureCanWriteSettings(role);
+
+  const setting = await getOrCreateSettingsRecord();
+  const updated = await prisma.companySetting.update({
+    where: { id: setting.id },
+    data: {
+      aboutHeroEyebrow: cleanText(input.heroEyebrow, defaultSettings.aboutHeroEyebrow, 80),
+      aboutHeroTitle: cleanText(input.heroTitle, defaultSettings.aboutHeroTitle, 180),
+      aboutHeroDescription: cleanText(
+        input.heroDescription,
+        defaultSettings.aboutHeroDescription,
+        400,
+      ),
+      aboutIntroTitle: cleanText(input.introTitle, defaultSettings.aboutIntroTitle, 140),
+      aboutIntroParagraphs: JSON.stringify(
+        input.introParagraphs.map((paragraph) => cleanText(paragraph, "", 700)),
+      ),
+      aboutCommitmentTitle: cleanText(
+        input.commitmentTitle,
+        defaultSettings.aboutCommitmentTitle,
+        140,
+      ),
+      aboutCommitmentDescription: cleanText(
+        input.commitmentDescription,
+        defaultSettings.aboutCommitmentDescription,
+        700,
+      ),
+      aboutMissionTitle: cleanText(input.missionTitle, defaultSettings.aboutMissionTitle, 80),
+      aboutMissionDescription: cleanText(
+        input.missionDescription,
+        defaultSettings.aboutMissionDescription,
+        700,
+      ),
+      aboutVisionTitle: cleanText(input.visionTitle, defaultSettings.aboutVisionTitle, 80),
+      aboutVisionDescription: cleanText(
+        input.visionDescription,
+        defaultSettings.aboutVisionDescription,
+        700,
+      ),
+      aboutValuesEyebrow: cleanText(
+        input.valuesEyebrow,
+        defaultSettings.aboutValuesEyebrow,
+        80,
+      ),
+      aboutValuesTitle: cleanText(input.valuesTitle, defaultSettings.aboutValuesTitle, 140),
+      aboutValuesDescription: cleanText(
+        input.valuesDescription,
+        defaultSettings.aboutValuesDescription,
+        300,
+      ),
+      aboutCoreValues: JSON.stringify(input.coreValues.map((item) => cleanText(item, "", 100))),
+      aboutWhyEyebrow: cleanText(input.whyEyebrow, defaultSettings.aboutWhyEyebrow, 80),
+      aboutWhyTitle: cleanText(input.whyTitle, defaultSettings.aboutWhyTitle, 140),
+      aboutWhyDescription: cleanText(
+        input.whyDescription,
+        defaultSettings.aboutWhyDescription,
+        300,
+      ),
+      aboutWhyItems: JSON.stringify(
+        input.whyItems.map((item) => ({
+          title: cleanText(item.title, "", 80),
+          description: cleanText(item.description, "", 220),
+        })),
+      ),
+      aboutFinalTitle: cleanText(input.finalTitle, defaultSettings.aboutFinalTitle, 140),
+      aboutFinalDescription: cleanText(
+        input.finalDescription,
+        defaultSettings.aboutFinalDescription,
+        700,
+      ),
+    },
+    include: { homeCarouselImages: { orderBy: { sortOrder: "asc" } } },
+  });
+
+  invalidatePublicSettingsCache();
+  await logSettingsAudit(adminId, "ABOUT_PAGE_SETTINGS_CHANGED", {
+    introParagraphCount: input.introParagraphs.length,
+    coreValueCount: input.coreValues.length,
+    whyItemCount: input.whyItems.length,
+  });
 
   return mapAdminSettings(updated);
 }

@@ -90,6 +90,11 @@ const homeStatSchema = z.object({
   value: requiredText("Stat value", 60),
 });
 
+const aboutWhyItemSchema = z.object({
+  title: requiredText("Why choose item title", 80),
+  description: requiredText("Why choose item description", 220),
+});
+
 export const homePageSettingsSchema = z.object({
   heroEyebrow: requiredText("Hero eyebrow", 120),
   heroTitle: requiredText("Hero title", 120),
@@ -130,9 +135,50 @@ export const homeCarouselReorderSchema = z.object({
   imageIds: z.array(z.uuid("Invalid carousel image ID.")).min(1).max(20),
 });
 
+export const aboutPageSettingsSchema = z.object({
+  heroEyebrow: requiredText("About eyebrow", 80),
+  heroTitle: requiredText("About title", 180),
+  heroDescription: requiredText("About description", 400),
+  introTitle: requiredText("Company introduction title", 140),
+  introParagraphs: z.array(requiredText("Company introduction paragraph", 700)).min(1).max(4),
+  commitmentTitle: requiredText("Service commitment title", 140),
+  commitmentDescription: requiredText("Service commitment description", 700),
+  missionTitle: requiredText("Mission title", 80),
+  missionDescription: requiredText("Mission description", 700),
+  visionTitle: requiredText("Vision title", 80),
+  visionDescription: requiredText("Vision description", 700),
+  valuesEyebrow: requiredText("Values eyebrow", 80),
+  valuesTitle: requiredText("Values title", 140),
+  valuesDescription: requiredText("Values description", 300),
+  coreValues: z.array(requiredText("Core value", 100)).min(1).max(8).superRefine((items, context) => {
+    const normalized = new Set<string>();
+
+    items.forEach((item, index) => {
+      const key = item.toLowerCase();
+
+      if (normalized.has(key)) {
+        context.addIssue({
+          code: "custom",
+          message: "Core values must be unique.",
+          path: [index],
+        });
+      }
+
+      normalized.add(key);
+    });
+  }),
+  whyEyebrow: requiredText("Why choose eyebrow", 80),
+  whyTitle: requiredText("Why choose title", 140),
+  whyDescription: requiredText("Why choose description", 300),
+  whyItems: z.array(aboutWhyItemSchema).min(1).max(6),
+  finalTitle: requiredText("Final commitment title", 140),
+  finalDescription: requiredText("Final commitment description", 700),
+});
+
 export type CompanyInformationInput = z.infer<typeof companyInformationSchema>;
 export type SocialLinksInput = z.infer<typeof socialLinksSchema>;
 export type FounderProfileInput = z.infer<typeof founderProfileSchema>;
 export type HomePageSettingsInput = z.infer<typeof homePageSettingsSchema>;
 export type HomeCarouselImageInput = z.infer<typeof homeCarouselImageSchema>;
 export type HomeCarouselReorderInput = z.infer<typeof homeCarouselReorderSchema>;
+export type AboutPageSettingsInput = z.infer<typeof aboutPageSettingsSchema>;

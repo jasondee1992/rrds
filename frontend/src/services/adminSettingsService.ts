@@ -51,6 +51,33 @@ export type HomePageSettingsPayload = {
   testimonialsDescription: string;
 };
 
+export type AboutPageSettingsPayload = {
+  heroEyebrow: string;
+  heroTitle: string;
+  heroDescription: string;
+  introTitle: string;
+  introParagraphs: string[];
+  commitmentTitle: string;
+  commitmentDescription: string;
+  missionTitle: string;
+  missionDescription: string;
+  visionTitle: string;
+  visionDescription: string;
+  valuesEyebrow: string;
+  valuesTitle: string;
+  valuesDescription: string;
+  coreValues: string[];
+  whyEyebrow: string;
+  whyTitle: string;
+  whyDescription: string;
+  whyItems: Array<{
+    title: string;
+    description: string;
+  }>;
+  finalTitle: string;
+  finalDescription: string;
+};
+
 type SettingsResponse = ApiResponse<{ settings: SiteSettings }>;
 
 function requireSettings(response: SettingsResponse) {
@@ -120,6 +147,15 @@ export async function removeFounderProfileImage() {
 export async function updateHomePageSettings(payload: HomePageSettingsPayload) {
   const response = await apiClient.patch<SettingsResponse>(
     "/admin/settings/home-page",
+    payload,
+  );
+
+  return requireSettings(response.data);
+}
+
+export async function updateAboutPageSettings(payload: AboutPageSettingsPayload) {
+  const response = await apiClient.patch<SettingsResponse>(
+    "/admin/settings/about-page",
     payload,
   );
 

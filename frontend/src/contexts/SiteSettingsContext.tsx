@@ -42,6 +42,8 @@ export function resolvePublicAssetUrl(value: string | undefined) {
 }
 
 function mergeSettings(settings: SiteSettings) {
+  const aboutSettings = settings.about ?? fallbackSiteSettings.about;
+
   return {
     company: {
       ...fallbackSiteSettings.company,
@@ -63,6 +65,22 @@ function mergeSettings(settings: SiteSettings) {
       ...settings.home,
       stats: settings.home.stats.length > 0 ? settings.home.stats : fallbackSiteSettings.home.stats,
       carouselImages: settings.home.carouselImages,
+    },
+    about: {
+      ...fallbackSiteSettings.about,
+      ...aboutSettings,
+      introParagraphs:
+        aboutSettings.introParagraphs.length > 0
+          ? aboutSettings.introParagraphs
+          : fallbackSiteSettings.about.introParagraphs,
+      coreValues:
+        aboutSettings.coreValues.length > 0
+          ? aboutSettings.coreValues
+          : fallbackSiteSettings.about.coreValues,
+      whyItems:
+        aboutSettings.whyItems.length > 0
+          ? aboutSettings.whyItems
+          : fallbackSiteSettings.about.whyItems,
     },
   };
 }

@@ -72,4 +72,63 @@ export const fallbackSiteSettings: SiteSettings = {
       "Placeholder testimonials for layout approval. Replace with verified customer feedback later.",
     carouselImages: [],
   },
+  about: {
+    heroEyebrow: "About Us",
+    heroTitle: "Air-Conditioning Service Built Around Comfort and Reliability",
+    heroDescription:
+      "Learn more about RRDS Airconditioning Services, the team approach, and the service standards behind each residential and commercial air-conditioning project.",
+    introTitle: "Company Introduction",
+    introParagraphs: [
+      "RRDS Airconditioning Services provides installation, maintenance, cleaning, repair, troubleshooting, and replacement support for residential and commercial air-conditioning needs.",
+      "This About page content is editable from the admin dashboard so approved company details can be published without changing the code.",
+    ],
+    commitmentTitle: "Service Commitment",
+    commitmentDescription:
+      "RRDS is positioned as a professional air-conditioning service provider focused on quality, reliable response, residential support, and commercial support.",
+    missionTitle: "Mission",
+    missionDescription:
+      "Provide dependable air-conditioning service that helps customers maintain safe, comfortable, and efficient indoor spaces.",
+    visionTitle: "Vision",
+    visionDescription:
+      "Become a trusted air-conditioning service partner for customers who value professionalism, clarity, and reliable support.",
+    valuesEyebrow: "Core Values",
+    valuesTitle: "What Guides the Service",
+    valuesDescription:
+      "Editable public values that describe how RRDS approaches customer work and service quality.",
+    coreValues: [
+      "Quality-focused work",
+      "Clear communication",
+      "Reliable scheduling",
+      "Practical service recommendations",
+    ],
+    whyEyebrow: "Why Choose RRDS",
+    whyTitle: "Practical Support for Aircon Service Needs",
+    whyDescription:
+      "Public-facing reasons customers may choose RRDS for residential and commercial air-conditioning work.",
+    whyItems: [
+      {
+        title: "Quality Service",
+        description:
+          "Careful workmanship and dependable service standards for every air-conditioning job.",
+      },
+      {
+        title: "Expert Technicians",
+        description:
+          "Skilled technicians ready to inspect, maintain, clean, repair, and install aircon units.",
+      },
+      {
+        title: "Fair Pricing",
+        description:
+          "Clear service recommendations and practical pricing for residential and commercial needs.",
+      },
+      {
+        title: "Customer Satisfaction",
+        description:
+          "Responsive support focused on comfort, reliability, and long-term customer confidence.",
+      },
+    ],
+    finalTitle: "Service Commitment",
+    finalDescription:
+      "RRDS service content should remain easy to edit as real operational details are approved. This page keeps the public message focused on quality work, reliability, residential service, commercial service, and customer support.",
+  },
 };

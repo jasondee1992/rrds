@@ -65,6 +65,38 @@ async function main() {
     { label: "Commercial Support", value: "Businesses" },
     { label: "Service Focus", value: "Cooling Comfort" },
   ];
+  const defaultAboutIntroParagraphs = [
+    "RRDS Airconditioning Services provides installation, maintenance, cleaning, repair, troubleshooting, and replacement support for residential and commercial air-conditioning needs.",
+    "This About page content is editable from the admin dashboard so approved company details can be published without changing the code.",
+  ];
+  const defaultAboutCoreValues = [
+    "Quality-focused work",
+    "Clear communication",
+    "Reliable scheduling",
+    "Practical service recommendations",
+  ];
+  const defaultAboutWhyItems = [
+    {
+      title: "Quality Service",
+      description:
+        "Careful workmanship and dependable service standards for every air-conditioning job.",
+    },
+    {
+      title: "Expert Technicians",
+      description:
+        "Skilled technicians ready to inspect, maintain, clean, repair, and install aircon units.",
+    },
+    {
+      title: "Fair Pricing",
+      description:
+        "Clear service recommendations and practical pricing for residential and commercial needs.",
+    },
+    {
+      title: "Customer Satisfaction",
+      description:
+        "Responsive support focused on comfort, reliability, and long-term customer confidence.",
+    },
+  ];
 
   const companySettingData = {
     companyName: "RRDS Airconditioning Services",
@@ -117,6 +149,34 @@ async function main() {
     homeTestimonialsTitle: "What Customers May Say",
     homeTestimonialsDescription:
       "Placeholder testimonials for layout approval. Replace with verified customer feedback later.",
+    aboutHeroEyebrow: "About Us",
+    aboutHeroTitle: "Air-Conditioning Service Built Around Comfort and Reliability",
+    aboutHeroDescription:
+      "Learn more about RRDS Airconditioning Services, the team approach, and the service standards behind each residential and commercial air-conditioning project.",
+    aboutIntroTitle: "Company Introduction",
+    aboutIntroParagraphs: JSON.stringify(defaultAboutIntroParagraphs),
+    aboutCommitmentTitle: "Service Commitment",
+    aboutCommitmentDescription:
+      "RRDS is positioned as a professional air-conditioning service provider focused on quality, reliable response, residential support, and commercial support.",
+    aboutMissionTitle: "Mission",
+    aboutMissionDescription:
+      "Provide dependable air-conditioning service that helps customers maintain safe, comfortable, and efficient indoor spaces.",
+    aboutVisionTitle: "Vision",
+    aboutVisionDescription:
+      "Become a trusted air-conditioning service partner for customers who value professionalism, clarity, and reliable support.",
+    aboutValuesEyebrow: "Core Values",
+    aboutValuesTitle: "What Guides the Service",
+    aboutValuesDescription:
+      "Editable public values that describe how RRDS approaches customer work and service quality.",
+    aboutCoreValues: JSON.stringify(defaultAboutCoreValues),
+    aboutWhyEyebrow: "Why Choose RRDS",
+    aboutWhyTitle: "Practical Support for Aircon Service Needs",
+    aboutWhyDescription:
+      "Public-facing reasons customers may choose RRDS for residential and commercial air-conditioning work.",
+    aboutWhyItems: JSON.stringify(defaultAboutWhyItems),
+    aboutFinalTitle: "Service Commitment",
+    aboutFinalDescription:
+      "RRDS service content should remain easy to edit as real operational details are approved. This page keeps the public message focused on quality work, reliability, residential service, commercial service, and customer support.",
     quotationValidityDays: 30,
     estimateValidityDays: 7,
     taxRate: new Prisma.Decimal(0),
