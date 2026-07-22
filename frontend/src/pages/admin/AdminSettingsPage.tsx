@@ -8,6 +8,7 @@ import {
   Save,
   Trash2,
   UserRound,
+  Wrench,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -27,6 +28,9 @@ import {
   updateHomePageSettings,
   updateSocialLinks,
   uploadHomeCarouselImage,
+  removePublicServiceImage,
+  updatePublicService,
+  uploadPublicServiceImage,
   uploadFounderProfileImage,
 } from "../../services/adminSettingsService";
 import type { SiteSettings } from "../../types/siteSettings";
@@ -107,13 +111,21 @@ type AboutForm = {
   finalDescription: string;
 };
 
-type SettingsTab = "company" | "social" | "home" | "about" | "founder";
+type ServicesForm = SiteSettings["services"];
+
+type SettingsTab = "company" | "social" | "home" | "about" | "services" | "founder";
 
 const fieldClass =
   "mt-2 min-h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-950 outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-700/20 disabled:bg-slate-100 disabled:text-slate-500";
 
 function getActiveSettingsTab(value: string | null): SettingsTab {
-  if (value === "social" || value === "home" || value === "about" || value === "founder") {
+  if (
+    value === "social" ||
+    value === "home" ||
+    value === "about" ||
+    value === "services" ||
+    value === "founder"
+  ) {
     return value;
   }
 
@@ -123,6 +135,18 @@ function getActiveSettingsTab(value: string | null): SettingsTab {
 function resolveImageUrl(imageUrl: string | undefined) {
   if (!imageUrl) {
     return fallbackFounderImage;
+  }
+
+  if (imageUrl.startsWith("/uploads/")) {
+    return `${new URL(API_BASE_URL).origin}${imageUrl}`;
+  }
+
+  return imageUrl;
+}
+
+function resolveOptionalImageUrl(imageUrl: string | undefined) {
+  if (!imageUrl) {
+    return undefined;
   }
 
   if (imageUrl.startsWith("/uploads/")) {
@@ -215,6 +239,10 @@ function buildAboutForm(settings: SiteSettings): AboutForm {
   };
 }
 
+function buildServicesForm(settings: SiteSettings): ServicesForm {
+  return settings.services;
+}
+
 function notifyPublicSettingsUpdated() {
   window.dispatchEvent(new Event("rrds:site-settings-updated"));
 }
@@ -252,6 +280,7 @@ export function AdminSettingsPage() {
   const [founderForm, setFounderForm] = useState<FounderForm | null>(null);
   const [homeForm, setHomeForm] = useState<HomeForm | null>(null);
   const [aboutForm, setAboutForm] = useState<AboutForm | null>(null);
+  const [servicesForm, setServicesForm] = useState<ServicesForm | null>(null);
   const [carouselAltText, setCarouselAltText] = useState("Professional air-conditioning technician");
   const [carouselCaption, setCarouselCaption] = useState("");
   const [newExpertise, setNewExpertise] = useState("");
@@ -277,6 +306,7 @@ export function AdminSettingsPage() {
       setFounderForm(buildFounderForm(result));
       setHomeForm(buildHomeForm(result));
       setAboutForm(buildAboutForm(result));
+      setServicesForm(buildServicesForm(result));
       setErrorMessage("");
     } catch (error) {
       setErrorMessage(getSafeApiErrorMessage(error, "Unable to load public settings."));
@@ -309,6 +339,7 @@ export function AdminSettingsPage() {
     setFounderForm(buildFounderForm(result));
     setHomeForm(buildHomeForm(result));
     setAboutForm(buildAboutForm(result));
+    setServicesForm(buildServicesForm(result));
     notifyPublicSettingsUpdated();
   }
 
@@ -378,6 +409,68 @@ export function AdminSettingsPage() {
       setErrorMessage("");
     } catch (error) {
       setErrorMessage(getSafeApiErrorMessage(error, "Unable to save about page settings."));
+    } finally {
+      setSavingSection("");
+    }
+  }
+
+  async function savePublicService(serviceKey: string) {
+    if (!servicesForm || !canEdit) return;
+    const service = servicesForm.find((item) => item.key === serviceKey);
+
+    if (!service) {
+      return;
+    }
+
+    setSavingSection(`service-${serviceKey}`);
+    setMessage("");
+
+    try {
+      const result = await updatePublicService(serviceKey, {
+        name: service.name,
+        summary: service.summary,
+        description: service.description,
+        isActive: service.isActive,
+      });
+      applySettings(result);
+      setMessage("Service details saved.");
+      setErrorMessage("");
+    } catch (error) {
+      setErrorMessage(getSafeApiErrorMessage(error, "Unable to save service details."));
+    } finally {
+      setSavingSection("");
+    }
+  }
+
+  async function handleServiceImageUpload(serviceKey: string, file: File | undefined) {
+    if (!file || !canEdit) return;
+    setSavingSection(`service-image-${serviceKey}`);
+    setMessage("");
+
+    try {
+      const result = await uploadPublicServiceImage(serviceKey, file);
+      applySettings(result);
+      setMessage("Service image uploaded.");
+      setErrorMessage("");
+    } catch (error) {
+      setErrorMessage(getSafeApiErrorMessage(error, "Unable to upload service image."));
+    } finally {
+      setSavingSection("");
+    }
+  }
+
+  async function handleServiceImageRemove(serviceKey: string) {
+    if (!canEdit || !window.confirm("Remove this service image?")) return;
+    setSavingSection(`service-image-${serviceKey}`);
+    setMessage("");
+
+    try {
+      const result = await removePublicServiceImage(serviceKey);
+      applySettings(result);
+      setMessage("Service image removed.");
+      setErrorMessage("");
+    } catch (error) {
+      setErrorMessage(getSafeApiErrorMessage(error, "Unable to remove service image."));
     } finally {
       setSavingSection("");
     }
@@ -627,7 +720,28 @@ export function AdminSettingsPage() {
     });
   }
 
-  if (isLoading || !companyForm || !socialForm || !founderForm || !homeForm || !aboutForm) {
+  function updateServiceForm(
+    serviceKey: string,
+    field: "name" | "summary" | "description" | "isActive",
+    value: string | boolean,
+  ) {
+    if (!servicesForm) return;
+    setServicesForm(
+      servicesForm.map((service) =>
+        service.key === serviceKey ? { ...service, [field]: value } : service,
+      ),
+    );
+  }
+
+  if (
+    isLoading ||
+    !companyForm ||
+    !socialForm ||
+    !founderForm ||
+    !homeForm ||
+    !aboutForm ||
+    !servicesForm
+  ) {
     return (
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <div className="space-y-4">
@@ -1452,6 +1566,132 @@ export function AdminSettingsPage() {
             <Save aria-hidden="true" className="h-4 w-4" />
             {savingSection === "about" ? "Saving..." : "Save About Page"}
           </button>
+        </div>
+      </section>
+      ) : null}
+
+      {activeTab === "services" ? (
+      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <SectionHeader
+          Icon={Wrench}
+          description="Manage the public service cards and upload service photos that replace the default icon display."
+          title="Services"
+        />
+
+        <div className="mt-6 grid gap-5">
+          {servicesForm.map((service) => {
+            const serviceImageUrl = resolveOptionalImageUrl(service.imageUrl);
+
+            return (
+              <article className="rounded-lg border border-slate-200 p-4 sm:p-5" key={service.key}>
+                <div className="grid gap-5 lg:grid-cols-[220px_1fr]">
+                  <aside>
+                    {serviceImageUrl ? (
+                      <img
+                        alt={service.name}
+                        className="aspect-[4/3] w-full rounded-md border border-slate-200 object-cover shadow-sm"
+                        src={serviceImageUrl}
+                      />
+                    ) : (
+                      <div className="flex aspect-[4/3] w-full items-center justify-center rounded-md border border-dashed border-slate-300 bg-slate-50 text-center text-sm font-semibold text-slate-500">
+                        Icon placeholder
+                      </div>
+                    )}
+                    <div className="mt-3 grid gap-2">
+                      <label className="inline-flex min-h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-md border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                        <ImageUp aria-hidden="true" className="h-4 w-4" />
+                        {savingSection === `service-image-${service.key}`
+                          ? "Uploading..."
+                          : service.imageUrl
+                            ? "Replace Photo"
+                            : "Upload Photo"}
+                        <input
+                          accept="image/jpeg,image/png,image/webp"
+                          className="hidden"
+                          disabled={!canEdit || isSaving}
+                          onChange={(event) =>
+                            void handleServiceImageUpload(service.key, event.target.files?.[0])
+                          }
+                          type="file"
+                        />
+                      </label>
+                      <button
+                        className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-md border border-red-300 px-4 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                        disabled={!canEdit || isSaving || !service.imageUrl}
+                        onClick={() => void handleServiceImageRemove(service.key)}
+                        type="button"
+                      >
+                        <Trash2 aria-hidden="true" className="h-4 w-4" />
+                        Remove Photo
+                      </button>
+                    </div>
+                  </aside>
+
+                  <div className="grid gap-4">
+                    <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-start">
+                      <label className="text-sm font-semibold text-slate-800">
+                        Service name
+                        <input
+                          className={fieldClass}
+                          disabled={!canEdit}
+                          onChange={(event) =>
+                            updateServiceForm(service.key, "name", event.target.value)
+                          }
+                          value={service.name}
+                        />
+                      </label>
+                      <label className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-slate-800">
+                        <input
+                          checked={service.isActive}
+                          className="h-4 w-4 rounded border-slate-300 text-blue-700 focus:ring-blue-700"
+                          disabled={!canEdit}
+                          onChange={(event) =>
+                            updateServiceForm(service.key, "isActive", event.target.checked)
+                          }
+                          type="checkbox"
+                        />
+                        Show on public site
+                      </label>
+                    </div>
+
+                    <label className="text-sm font-semibold text-slate-800">
+                      Short summary
+                      <textarea
+                        className={`${fieldClass} min-h-24 py-3`}
+                        disabled={!canEdit}
+                        onChange={(event) =>
+                          updateServiceForm(service.key, "summary", event.target.value)
+                        }
+                        value={service.summary}
+                      />
+                    </label>
+
+                    <label className="text-sm font-semibold text-slate-800">
+                      Full description
+                      <textarea
+                        className={`${fieldClass} min-h-32 py-3`}
+                        disabled={!canEdit}
+                        onChange={(event) =>
+                          updateServiceForm(service.key, "description", event.target.value)
+                        }
+                        value={service.description}
+                      />
+                    </label>
+
+                    <button
+                      className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-md bg-blue-700 px-4 text-sm font-semibold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-slate-400 sm:w-fit"
+                      disabled={!canEdit || isSaving}
+                      onClick={() => void savePublicService(service.key)}
+                      type="button"
+                    >
+                      <Save aria-hidden="true" className="h-4 w-4" />
+                      {savingSection === `service-${service.key}` ? "Saving..." : "Save Service"}
+                    </button>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
         </div>
       </section>
       ) : null}

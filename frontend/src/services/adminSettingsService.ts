@@ -78,6 +78,13 @@ export type AboutPageSettingsPayload = {
   finalDescription: string;
 };
 
+export type PublicServicePayload = {
+  name: string;
+  summary: string;
+  description: string;
+  isActive?: boolean;
+};
+
 type SettingsResponse = ApiResponse<{ settings: SiteSettings }>;
 
 function requireSettings(response: SettingsResponse) {
@@ -157,6 +164,38 @@ export async function updateAboutPageSettings(payload: AboutPageSettingsPayload)
   const response = await apiClient.patch<SettingsResponse>(
     "/admin/settings/about-page",
     payload,
+  );
+
+  return requireSettings(response.data);
+}
+
+export async function updatePublicService(serviceKey: string, payload: PublicServicePayload) {
+  const response = await apiClient.patch<SettingsResponse>(
+    `/admin/settings/services/${serviceKey}`,
+    payload,
+  );
+
+  return requireSettings(response.data);
+}
+
+export async function uploadPublicServiceImage(serviceKey: string, file: File) {
+  const formData = new FormData();
+  formData.append("image", file);
+
+  const response = await apiClient.post<SettingsResponse>(
+    `/admin/settings/services/${serviceKey}/image`,
+    formData,
+    {
+      headers: { "Content-Type": "multipart/form-data" },
+    },
+  );
+
+  return requireSettings(response.data);
+}
+
+export async function removePublicServiceImage(serviceKey: string) {
+  const response = await apiClient.delete<SettingsResponse>(
+    `/admin/settings/services/${serviceKey}/image`,
   );
 
   return requireSettings(response.data);

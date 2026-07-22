@@ -11,6 +11,7 @@ import type {
   HomeCarouselImageInput,
   HomeCarouselReorderInput,
   HomePageSettingsInput,
+  PublicServiceInput,
   SocialLinksInput,
 } from "../validations/settingsSchemas";
 
@@ -18,8 +19,11 @@ const founderUploadPublicPath = "/uploads/founder";
 const founderUploadDirectory = path.resolve(process.cwd(), "uploads", "founder");
 const homeUploadPublicPath = "/uploads/home";
 const homeUploadDirectory = path.resolve(process.cwd(), "uploads", "home");
+const serviceUploadPublicPath = "/uploads/services";
+const serviceUploadDirectory = path.resolve(process.cwd(), "uploads", "services");
 const maxFounderImageSize = 5 * 1024 * 1024;
 const maxHomeImageSize = 5 * 1024 * 1024;
+const maxServiceImageSize = 5 * 1024 * 1024;
 
 const defaultFounderExpertise = [
   "Residential Air-Conditioning Systems",
@@ -70,6 +74,51 @@ const defaultAboutWhyItems = [
     title: "Customer Satisfaction",
     description:
       "Responsive support focused on comfort, reliability, and long-term customer confidence.",
+  },
+];
+
+const defaultPublicServices = [
+  {
+    serviceKey: "aircon-installation",
+    name: "Aircon Installation",
+    summary: "Professional installation for new residential and commercial air-conditioning units.",
+    description:
+      "Use this section to describe RRDS installation checks, unit placement, drainage planning, and basic handover process.",
+  },
+  {
+    serviceKey: "preventive-maintenance",
+    name: "Preventive Maintenance",
+    summary: "Routine inspection and care to help keep aircon systems running efficiently.",
+    description:
+      "Use this section to outline scheduled inspection, cleaning, performance checks, and maintenance recommendations.",
+  },
+  {
+    serviceKey: "aircon-repair",
+    name: "Aircon Repair",
+    summary: "Repair support covering common cooling and unit issues.",
+    description:
+      "Use this section to describe diagnosis, repair recommendations, replacement parts, and post-service checks.",
+  },
+  {
+    serviceKey: "aircon-cleaning",
+    name: "Aircon Cleaning",
+    summary: "Cleaning services for improved airflow, cleaner operation, and better comfort.",
+    description:
+      "Use this section to describe filter cleaning, coil cleaning, drainage checks, and general unit care.",
+  },
+  {
+    serviceKey: "troubleshooting",
+    name: "Troubleshooting",
+    summary: "Inspection support for leaks, noise, weak cooling, and other aircon concerns.",
+    description:
+      "Use this section to describe inspection steps and how RRDS communicates practical next actions.",
+  },
+  {
+    serviceKey: "supply-and-replacement",
+    name: "Supply and Replacement",
+    summary: "Unit supply, replacement, and practical upgrade guidance.",
+    description:
+      "Use this section to describe replacement planning, unit recommendations, and basic installation coordination.",
   },
 ];
 
@@ -166,6 +215,11 @@ const defaultSettings = {
 
 let publicSettingsCache: { expiresAt: number; data: PublicSiteSettings } | null = null;
 
+const settingsInclude = {
+  homeCarouselImages: { orderBy: { sortOrder: "asc" as const } },
+  publicServices: { orderBy: { sortOrder: "asc" as const } },
+};
+
 type CompanySettingRecord = Awaited<ReturnType<typeof getOrCreateSettingsRecord>>;
 
 export type PublicSiteSettings = {
@@ -221,6 +275,15 @@ export type PublicSiteSettings = {
       sortOrder: number;
     }>;
   };
+  services: Array<{
+    key: string;
+    name: string;
+    summary: string;
+    description: string;
+    imageUrl?: string;
+    sortOrder: number;
+    isActive: boolean;
+  }>;
   about: {
     heroEyebrow: string;
     heroTitle: string;
@@ -506,6 +569,19 @@ function mapPublicSettings(setting: CompanySettingRecord): PublicSiteSettings {
         sortOrder: image.sortOrder,
       })),
     },
+    services: setting.publicServices
+      .filter((service) => service.isActive)
+      .map((service) => ({
+        key: service.serviceKey,
+        name: cleanText(service.name, "RRDS Service", 120),
+        summary: cleanText(service.summary, "Air-conditioning service support.", 240),
+        description: cleanText(service.description, "Air-conditioning service support.", 900),
+        ...(cleanOptionalText(service.imagePath, 240)
+          ? { imageUrl: cleanOptionalText(service.imagePath, 240) ?? undefined }
+          : {}),
+        sortOrder: service.sortOrder,
+        isActive: service.isActive,
+      })),
     about: {
       heroEyebrow: cleanText(setting.aboutHeroEyebrow, defaultSettings.aboutHeroEyebrow, 80),
       heroTitle: cleanText(setting.aboutHeroTitle, defaultSettings.aboutHeroTitle, 180),
@@ -588,22 +664,60 @@ function mapAdminSettings(setting: CompanySettingRecord) {
         sortOrder: image.sortOrder,
       })),
     },
+    services: setting.publicServices.map((service) => ({
+      key: service.serviceKey,
+      name: cleanText(service.name, "RRDS Service", 120),
+      summary: cleanText(service.summary, "Air-conditioning service support.", 240),
+      description: cleanText(service.description, "Air-conditioning service support.", 900),
+      imageUrl: cleanOptionalText(service.imagePath, 240) ?? undefined,
+      sortOrder: service.sortOrder,
+      isActive: service.isActive,
+    })),
   };
 }
 
 async function getOrCreateSettingsRecord() {
   const existing = await prisma.companySetting.findFirst({
     orderBy: { createdAt: "asc" },
-    include: { homeCarouselImages: { orderBy: { sortOrder: "asc" } } },
+    include: settingsInclude,
   });
 
   if (existing) {
+    if (existing.publicServices.length === 0) {
+      await createDefaultPublicServices(existing.id);
+
+      return prisma.companySetting.findUniqueOrThrow({
+        where: { id: existing.id },
+        include: settingsInclude,
+      });
+    }
+
     return existing;
   }
 
-  return prisma.companySetting.create({
+  const created = await prisma.companySetting.create({
     data: defaultSettings,
-    include: { homeCarouselImages: { orderBy: { sortOrder: "asc" } } },
+    include: settingsInclude,
+  });
+
+  await createDefaultPublicServices(created.id);
+
+  return prisma.companySetting.findUniqueOrThrow({
+    where: { id: created.id },
+    include: settingsInclude,
+  });
+}
+
+async function createDefaultPublicServices(companySettingId: string) {
+  await prisma.publicService.createMany({
+    data: defaultPublicServices.map((service, index) => ({
+      companySettingId,
+      serviceKey: service.serviceKey,
+      name: service.name,
+      summary: service.summary,
+      description: service.description,
+      sortOrder: index + 1,
+    })),
   });
 }
 
@@ -667,7 +781,7 @@ export async function updateCompanyInformation(
       companyEmail: cleanText(input.contactEmail, defaultSettings.companyEmail, 160),
       companyAddress: cleanText(input.businessAddress, defaultSettings.companyAddress, 300),
     },
-    include: { homeCarouselImages: { orderBy: { sortOrder: "asc" } } },
+    include: settingsInclude,
   });
 
   invalidatePublicSettingsCache();
@@ -690,7 +804,7 @@ export async function updateSocialLinks(
       facebookUrl: cleanOptionalText(input.facebookUrl, 240),
       linkedinUrl: cleanOptionalText(input.linkedinUrl, 240),
     },
-    include: { homeCarouselImages: { orderBy: { sortOrder: "asc" } } },
+    include: settingsInclude,
   });
 
   invalidatePublicSettingsCache();
@@ -737,7 +851,7 @@ export async function updateFounderProfile(
       ),
       founderExpertise: JSON.stringify(input.founderExpertise.map((item) => cleanText(item, "", 120))),
     },
-    include: { homeCarouselImages: { orderBy: { sortOrder: "asc" } } },
+    include: settingsInclude,
   });
 
   invalidatePublicSettingsCache();
@@ -807,7 +921,7 @@ export async function uploadFounderImage(
   const updated = await prisma.companySetting.update({
     where: { id: setting.id },
     data: { founderImagePath: publicPath },
-    include: { homeCarouselImages: { orderBy: { sortOrder: "asc" } } },
+    include: settingsInclude,
   });
 
   await removeLocalFounderImage(setting.founderImagePath);
@@ -829,7 +943,7 @@ export async function removeFounderImage(adminId: string, role: AdminRole) {
   const updated = await prisma.companySetting.update({
     where: { id: setting.id },
     data: { founderImagePath: null },
-    include: { homeCarouselImages: { orderBy: { sortOrder: "asc" } } },
+    include: settingsInclude,
   });
 
   await removeLocalFounderImage(previousImagePath);
@@ -938,7 +1052,7 @@ export async function updateHomePageSettings(
         300,
       ),
     },
-    include: { homeCarouselImages: { orderBy: { sortOrder: "asc" } } },
+    include: settingsInclude,
   });
 
   invalidatePublicSettingsCache();
@@ -1023,7 +1137,7 @@ export async function updateAboutPageSettings(
         700,
       ),
     },
-    include: { homeCarouselImages: { orderBy: { sortOrder: "asc" } } },
+    include: settingsInclude,
   });
 
   invalidatePublicSettingsCache();
@@ -1034,6 +1148,151 @@ export async function updateAboutPageSettings(
   });
 
   return mapAdminSettings(updated);
+}
+
+export async function updatePublicService(
+  serviceKey: string,
+  input: PublicServiceInput,
+  adminId: string,
+  role: AdminRole,
+) {
+  ensureCanWriteSettings(role);
+
+  const service = await prisma.publicService.findUnique({
+    where: { serviceKey },
+    select: { id: true },
+  });
+
+  if (!service) {
+    throw new AppError("Public service not found.", 404);
+  }
+
+  await prisma.publicService.update({
+    where: { serviceKey },
+    data: {
+      name: cleanText(input.name, "RRDS Service", 120),
+      summary: cleanText(input.summary, "Air-conditioning service support.", 240),
+      description: cleanText(input.description, "Air-conditioning service support.", 900),
+      isActive: input.isActive ?? true,
+    },
+    select: { id: true },
+  });
+
+  invalidatePublicSettingsCache();
+  await logSettingsAudit(adminId, "PUBLIC_SERVICE_CHANGED", { serviceKey });
+
+  return getAdminPublicProfileSettings();
+}
+
+function assertServiceImage(file: Express.Multer.File | undefined) {
+  if (!file) {
+    throw new AppError("Service image is required.", 400);
+  }
+
+  if (file.size > maxServiceImageSize) {
+    throw new AppError("Service image must be 5 MB or smaller.", 400);
+  }
+
+  const extension = path.extname(file.originalname).toLowerCase();
+  const allowed: Record<string, string[]> = {
+    "image/jpeg": [".jpg", ".jpeg"],
+    "image/png": [".png"],
+    "image/webp": [".webp"],
+  };
+
+  if (!allowed[file.mimetype]?.includes(extension)) {
+    throw new AppError("Service image must be a JPEG, PNG, or WebP file.", 400);
+  }
+
+  return extension === ".jpeg" ? ".jpg" : extension;
+}
+
+async function removeLocalServiceImage(imagePath: string | null | undefined) {
+  if (!imagePath?.startsWith(`${serviceUploadPublicPath}/`)) {
+    return;
+  }
+
+  const filename = path.basename(imagePath);
+  const resolved = path.resolve(serviceUploadDirectory, filename);
+  const relative = path.relative(serviceUploadDirectory, resolved);
+
+  if (relative.startsWith("..") || path.isAbsolute(relative)) {
+    return;
+  }
+
+  await fs.unlink(resolved).catch(() => undefined);
+}
+
+export async function uploadPublicServiceImage(
+  serviceKey: string,
+  file: Express.Multer.File | undefined,
+  adminId: string,
+  role: AdminRole,
+) {
+  ensureCanWriteSettings(role);
+
+  const extension = assertServiceImage(file);
+  const service = await prisma.publicService.findUnique({
+    where: { serviceKey },
+    select: { imagePath: true },
+  });
+
+  if (!service) {
+    throw new AppError("Public service not found.", 404);
+  }
+
+  const filename = `${crypto.randomUUID()}${extension}`;
+  const publicPath = `${serviceUploadPublicPath}/${filename}`;
+
+  await fs.mkdir(serviceUploadDirectory, { recursive: true });
+  await fs.writeFile(path.join(serviceUploadDirectory, filename), file!.buffer, {
+    flag: "wx",
+  });
+
+  await prisma.publicService.update({
+    where: { serviceKey },
+    data: { imagePath: publicPath },
+    select: { id: true },
+  });
+
+  await removeLocalServiceImage(service.imagePath);
+  invalidatePublicSettingsCache();
+  await logSettingsAudit(
+    adminId,
+    service.imagePath ? "PUBLIC_SERVICE_IMAGE_REPLACED" : "PUBLIC_SERVICE_IMAGE_UPLOADED",
+    { serviceKey },
+  );
+
+  return getAdminPublicProfileSettings();
+}
+
+export async function removePublicServiceImage(
+  serviceKey: string,
+  adminId: string,
+  role: AdminRole,
+) {
+  ensureCanWriteSettings(role);
+
+  const service = await prisma.publicService.findUnique({
+    where: { serviceKey },
+    select: { imagePath: true },
+  });
+
+  if (!service) {
+    throw new AppError("Public service not found.", 404);
+  }
+
+  await prisma.publicService.update({
+    where: { serviceKey },
+    data: { imagePath: null },
+    select: { id: true },
+  });
+
+  await removeLocalServiceImage(service.imagePath);
+  invalidatePublicSettingsCache();
+  await logSettingsAudit(adminId, "PUBLIC_SERVICE_IMAGE_REMOVED", { serviceKey });
+
+  return getAdminPublicProfileSettings();
 }
 
 function assertHomeCarouselImage(file: Express.Multer.File | undefined) {

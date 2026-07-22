@@ -5,15 +5,18 @@ import {
   getPublicSiteSettings,
   deleteHomeCarouselImage,
   removeFounderImage,
+  removePublicServiceImage,
   reorderHomeCarouselImages,
   updateHomeCarouselImage,
   updateAboutPageSettings,
   updateCompanyInformation,
   updateFounderProfile,
   updateHomePageSettings,
+  updatePublicService,
   updateSocialLinks,
   uploadFounderImage,
   uploadHomeCarouselImage,
+  uploadPublicServiceImage,
 } from "../services/settingsService";
 import { errorResponse, successResponse } from "../utils/apiResponse";
 import {
@@ -24,6 +27,8 @@ import {
   homeCarouselImageSchema,
   homeCarouselReorderSchema,
   homePageSettingsSchema,
+  publicServiceParamSchema,
+  publicServiceSchema,
   socialLinksSchema,
 } from "../validations/settingsSchemas";
 
@@ -122,6 +127,66 @@ export async function patchAboutPageSettings(req: Request, res: Response) {
   );
 
   res.json(successResponse("About page settings saved", { settings }));
+}
+
+export async function patchPublicService(req: Request, res: Response) {
+  const parsedParams = publicServiceParamSchema.safeParse(req.params);
+
+  if (!parsedParams.success) {
+    res.status(400).json(errorResponse("Invalid service key."));
+    return;
+  }
+
+  const parsedBody = publicServiceSchema.safeParse(req.body);
+
+  if (!parsedBody.success) {
+    res.status(400).json(errorResponse("Invalid service details."));
+    return;
+  }
+
+  const settings = await updatePublicService(
+    parsedParams.data.serviceKey,
+    parsedBody.data,
+    req.admin?.id ?? "",
+    req.admin?.role ?? AdminRole.STAFF,
+  );
+
+  res.json(successResponse("Service details saved", { settings }));
+}
+
+export async function postPublicServiceImage(req: Request, res: Response) {
+  const parsedParams = publicServiceParamSchema.safeParse(req.params);
+
+  if (!parsedParams.success) {
+    res.status(400).json(errorResponse("Invalid service key."));
+    return;
+  }
+
+  const settings = await uploadPublicServiceImage(
+    parsedParams.data.serviceKey,
+    req.file,
+    req.admin?.id ?? "",
+    req.admin?.role ?? AdminRole.STAFF,
+  );
+
+  res.status(201).json(successResponse("Service image uploaded", { settings }));
+}
+
+export async function deletePublicServiceImage(req: Request, res: Response) {
+  const parsedParams = publicServiceParamSchema.safeParse(req.params);
+
+  if (!parsedParams.success) {
+    res.status(400).json(errorResponse("Invalid service key."));
+    return;
+  }
+
+  const settings = await removePublicServiceImage(
+    parsedParams.data.serviceKey,
+    req.admin?.id ?? "",
+    req.admin?.role ?? AdminRole.STAFF,
+  );
+
+  res.json(successResponse("Service image removed", { settings }));
 }
 
 export async function postFounderProfileImage(req: Request, res: Response) {

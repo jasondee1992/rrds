@@ -52,6 +52,15 @@ export type SiteSettings = {
       sortOrder: number;
     }>;
   };
+  services: Array<{
+    key: string;
+    name: string;
+    summary: string;
+    description: string;
+    imageUrl?: string;
+    sortOrder: number;
+    isActive: boolean;
+  }>;
   about: {
     heroEyebrow: string;
     heroTitle: string;

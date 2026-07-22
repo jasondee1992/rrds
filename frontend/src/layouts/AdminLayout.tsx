@@ -38,6 +38,7 @@ const settingsNavItems = [
   { label: "Social Media", path: "/admin/settings?tab=social" },
   { label: "Home Page", path: "/admin/settings?tab=home" },
   { label: "About Page", path: "/admin/settings?tab=about" },
+  { label: "Services", path: "/admin/settings?tab=services" },
   { label: "Founder Profile", path: "/admin/settings?tab=founder" },
 ];
 

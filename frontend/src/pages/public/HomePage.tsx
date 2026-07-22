@@ -16,7 +16,6 @@ import {
 import {
   benefits,
   projects,
-  services,
   testimonials,
 } from "../../data/publicData";
 
@@ -115,6 +114,7 @@ function HomeHeroCarousel() {
 export function HomePage() {
   const { settings } = useSiteSettings();
   const { home } = settings;
+  const services = settings.services.filter((service) => service.isActive);
 
   return (
     <main>
@@ -179,7 +179,7 @@ export function HomePage() {
           </div>
           <div className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {services.map((service) => (
-              <ServiceCard key={service.id} service={service} />
+              <ServiceCard key={service.key} service={service} />
             ))}
           </div>
         </div>

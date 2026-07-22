@@ -369,6 +369,7 @@ model CompanySetting {
   createdAt                    DateTime            @default(now())
   updatedAt                    DateTime            @updatedAt
   homeCarouselImages           HomeCarouselImage[]
+  publicServices               PublicService[]
 
   @@index([companyName])
   @@index([companyEmail])
@@ -387,4 +388,24 @@ model HomeCarouselImage {
 
   @@index([companySettingId])
   @@index([sortOrder])
+}
+
+model PublicService {
+  id               String         @id @default(uuid())
+  companySettingId String
+  serviceKey       String         @unique
+  name             String
+  summary          String
+  description      String
+  imagePath        String?
+  sortOrder        Int            @default(0)
+  isActive         Boolean        @default(true)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  companySetting   CompanySetting @relation(fields: [companySettingId], references: [id], onDelete: Cascade)
+
+  @@index([companySettingId])
+  @@index([serviceKey])
+  @@index([sortOrder])
+  @@index([isActive])
 }

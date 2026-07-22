@@ -43,6 +43,7 @@ export function resolvePublicAssetUrl(value: string | undefined) {
 
 function mergeSettings(settings: SiteSettings) {
   const aboutSettings = settings.about ?? fallbackSiteSettings.about;
+  const servicesSettings = settings.services ?? fallbackSiteSettings.services;
 
   return {
     company: {
@@ -66,6 +67,7 @@ function mergeSettings(settings: SiteSettings) {
       stats: settings.home.stats.length > 0 ? settings.home.stats : fallbackSiteSettings.home.stats,
       carouselImages: settings.home.carouselImages,
     },
+    services: servicesSettings.length > 0 ? servicesSettings : fallbackSiteSettings.services,
     about: {
       ...fallbackSiteSettings.about,
       ...aboutSettings,

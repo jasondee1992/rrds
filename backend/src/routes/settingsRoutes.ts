@@ -5,6 +5,7 @@ import multer from "multer";
 import {
   deleteFounderProfileImage,
   deleteHomeCarouselImageController,
+  deletePublicServiceImage,
   getAdminPublicProfileSettingsController,
   getPublicSiteSettingsController,
   patchAboutPageSettings,
@@ -13,9 +14,11 @@ import {
   patchCompanyInformation,
   patchFounderProfile,
   patchHomePageSettings,
+  patchPublicService,
   patchSocialLinks,
   postFounderProfileImage,
   postHomeCarouselImage,
+  postPublicServiceImage,
 } from "../controllers/settingsController";
 import { authenticateAdmin, authorizeRoles } from "../middlewares/adminAuth";
 import { errorResponse } from "../utils/apiResponse";
@@ -66,6 +69,22 @@ settingsRoutes.patch(
   "/admin/settings/about-page",
   requireSettingsWrite,
   patchAboutPageSettings,
+);
+settingsRoutes.patch(
+  "/admin/settings/services/:serviceKey",
+  requireSettingsWrite,
+  patchPublicService,
+);
+settingsRoutes.post(
+  "/admin/settings/services/:serviceKey/image",
+  requireSettingsWrite,
+  upload.single("image"),
+  postPublicServiceImage,
+);
+settingsRoutes.delete(
+  "/admin/settings/services/:serviceKey/image",
+  requireSettingsWrite,
+  deletePublicServiceImage,
 );
 settingsRoutes.post(
   "/admin/settings/founder-profile/image",

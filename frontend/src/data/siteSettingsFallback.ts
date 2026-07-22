@@ -72,6 +72,62 @@ export const fallbackSiteSettings: SiteSettings = {
       "Placeholder testimonials for layout approval. Replace with verified customer feedback later.",
     carouselImages: [],
   },
+  services: [
+    {
+      key: "aircon-installation",
+      name: "Aircon Installation",
+      summary: "Professional installation for new residential and commercial air-conditioning units.",
+      description:
+        "Use this section to describe RRDS installation checks, unit placement, drainage planning, and basic handover process.",
+      sortOrder: 1,
+      isActive: true,
+    },
+    {
+      key: "preventive-maintenance",
+      name: "Preventive Maintenance",
+      summary: "Routine inspection and care to help keep aircon systems running efficiently.",
+      description:
+        "Use this section to outline scheduled inspection, cleaning, performance checks, and maintenance recommendations.",
+      sortOrder: 2,
+      isActive: true,
+    },
+    {
+      key: "aircon-repair",
+      name: "Aircon Repair",
+      summary: "Repair support covering common cooling and unit issues.",
+      description:
+        "Use this section to describe diagnosis, repair recommendations, replacement parts, and post-service checks.",
+      sortOrder: 3,
+      isActive: true,
+    },
+    {
+      key: "aircon-cleaning",
+      name: "Aircon Cleaning",
+      summary: "Cleaning services for improved airflow, cleaner operation, and better comfort.",
+      description:
+        "Use this section to describe filter cleaning, coil cleaning, drainage checks, and general unit care.",
+      sortOrder: 4,
+      isActive: true,
+    },
+    {
+      key: "troubleshooting",
+      name: "Troubleshooting",
+      summary: "Inspection support for leaks, noise, weak cooling, and other aircon concerns.",
+      description:
+        "Use this section to describe inspection steps and how RRDS communicates practical next actions.",
+      sortOrder: 5,
+      isActive: true,
+    },
+    {
+      key: "supply-and-replacement",
+      name: "Supply and Replacement",
+      summary: "Unit supply, replacement, and practical upgrade guidance.",
+      description:
+        "Use this section to describe replacement planning, unit recommendations, and basic installation coordination.",
+      sortOrder: 6,
+      isActive: true,
+    },
+  ],
   about: {
     heroEyebrow: "About Us",
     heroTitle: "Air-Conditioning Service Built Around Comfort and Reliability",

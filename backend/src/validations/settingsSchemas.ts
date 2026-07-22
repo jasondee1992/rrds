@@ -135,6 +135,22 @@ export const homeCarouselReorderSchema = z.object({
   imageIds: z.array(z.uuid("Invalid carousel image ID.")).min(1).max(20),
 });
 
+export const publicServiceParamSchema = z.object({
+  serviceKey: z
+    .string()
+    .trim()
+    .min(1)
+    .max(80)
+    .regex(/^[a-z0-9-]+$/, "Invalid public service key."),
+});
+
+export const publicServiceSchema = z.object({
+  name: requiredText("Service name", 120),
+  summary: requiredText("Service summary", 240),
+  description: requiredText("Service description", 900),
+  isActive: z.boolean().optional(),
+});
+
 export const aboutPageSettingsSchema = z.object({
   heroEyebrow: requiredText("About eyebrow", 80),
   heroTitle: requiredText("About title", 180),
@@ -182,3 +198,4 @@ export type HomePageSettingsInput = z.infer<typeof homePageSettingsSchema>;
 export type HomeCarouselImageInput = z.infer<typeof homeCarouselImageSchema>;
 export type HomeCarouselReorderInput = z.infer<typeof homeCarouselReorderSchema>;
 export type AboutPageSettingsInput = z.infer<typeof aboutPageSettingsSchema>;
+export type PublicServiceInput = z.infer<typeof publicServiceSchema>;

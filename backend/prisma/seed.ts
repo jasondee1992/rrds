@@ -97,6 +97,50 @@ async function main() {
         "Responsive support focused on comfort, reliability, and long-term customer confidence.",
     },
   ];
+  const defaultPublicServices = [
+    {
+      serviceKey: "aircon-installation",
+      name: "Aircon Installation",
+      summary: "Professional installation for new residential and commercial air-conditioning units.",
+      description:
+        "Use this section to describe RRDS installation checks, unit placement, drainage planning, and basic handover process.",
+    },
+    {
+      serviceKey: "preventive-maintenance",
+      name: "Preventive Maintenance",
+      summary: "Routine inspection and care to help keep aircon systems running efficiently.",
+      description:
+        "Use this section to outline scheduled inspection, cleaning, performance checks, and maintenance recommendations.",
+    },
+    {
+      serviceKey: "aircon-repair",
+      name: "Aircon Repair",
+      summary: "Repair support covering common cooling and unit issues.",
+      description:
+        "Use this section to describe diagnosis, repair recommendations, replacement parts, and post-service checks.",
+    },
+    {
+      serviceKey: "aircon-cleaning",
+      name: "Aircon Cleaning",
+      summary: "Cleaning services for improved airflow, cleaner operation, and better comfort.",
+      description:
+        "Use this section to describe filter cleaning, coil cleaning, drainage checks, and general unit care.",
+    },
+    {
+      serviceKey: "troubleshooting",
+      name: "Troubleshooting",
+      summary: "Inspection support for leaks, noise, weak cooling, and other aircon concerns.",
+      description:
+        "Use this section to describe inspection steps and how RRDS communicates practical next actions.",
+    },
+    {
+      serviceKey: "supply-and-replacement",
+      name: "Supply and Replacement",
+      summary: "Unit supply, replacement, and practical upgrade guidance.",
+      description:
+        "Use this section to describe replacement planning, unit recommendations, and basic installation coordination.",
+    },
+  ];
 
   const companySettingData = {
     companyName: "RRDS Airconditioning Services",
@@ -194,6 +238,23 @@ async function main() {
     : await prisma.companySetting.create({
         data: companySettingData,
       });
+
+  const publicServiceCount = await prisma.publicService.count({
+    where: { companySettingId: companySetting.id },
+  });
+
+  if (publicServiceCount === 0) {
+    await prisma.publicService.createMany({
+      data: defaultPublicServices.map((service, index) => ({
+        companySettingId: companySetting.id,
+        serviceKey: service.serviceKey,
+        name: service.name,
+        summary: service.summary,
+        description: service.description,
+        sortOrder: index + 1,
+      })),
+    });
+  }
 
   console.log(`Seeded admin user: ${adminUser.email}`);
   console.log(`Seeded company settings: ${companySetting.companyName}`);
