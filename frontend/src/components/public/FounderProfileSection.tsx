@@ -1,5 +1,5 @@
 import { Award, Building2, CheckCircle2 } from "lucide-react";
-import { founderProfile } from "../../data/publicData";
+import { useSiteSettings } from "../../contexts/SiteSettingsContext";
 import { PrimaryButton } from "./PrimaryButton";
 import { SecondaryButton } from "./SecondaryButton";
 import { SectionTitle } from "./SectionTitle";
@@ -35,6 +35,8 @@ function ProfileBadge({
 }
 
 function FounderAvatar({ isFull }: { isFull: boolean }) {
+  const { founderImageUrl } = useSiteSettings();
+
   return (
     <div className="mx-auto w-full max-w-[260px] lg:mx-0">
       <div
@@ -43,9 +45,9 @@ function FounderAvatar({ isFull }: { isFull: boolean }) {
         }`}
       >
         <img
-          alt={founderProfile.imageAlt}
+          alt="RRDS founder and lead air-conditioning technician"
           className="aspect-square w-full rounded-md object-cover"
-          src={founderProfile.image}
+          src={founderImageUrl}
         />
       </div>
     </div>
@@ -63,6 +65,13 @@ function ExpertiseBadge({ label }: { label: string }) {
 
 export function FounderProfileSection({ variant }: FounderProfileSectionProps) {
   const isFull = variant === "full";
+  const { settings } = useSiteSettings();
+  const { founder } = settings;
+  const biographyParagraphs = founder.fullBiography
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+  const experienceBadge = `${founder.experienceYears} Years of Air-Conditioning Experience`;
 
   return (
     <section className={`${isFull ? "bg-white" : "bg-slate-50"} px-6 py-16 sm:py-20`}>
@@ -91,26 +100,26 @@ export function FounderProfileSection({ variant }: FounderProfileSectionProps) {
               </p>
             ) : null}
             <h2 className={`${isFull ? "text-3xl sm:text-4xl" : "text-2xl sm:text-3xl"} mt-3 font-bold text-slate-950`}>
-              {founderProfile.name}
+              {founder.name}
             </h2>
             <p className="mt-2 text-base font-semibold text-blue-800">
-              {founderProfile.role}
+              {founder.role}
             </p>
 
             <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center lg:justify-start">
-              <ProfileBadge>{founderProfile.experienceBadge}</ProfileBadge>
-              <ProfileBadge tone="slate">{founderProfile.currentResponsibility}</ProfileBadge>
+              <ProfileBadge>{experienceBadge}</ProfileBadge>
+              <ProfileBadge tone="slate">{founder.currentResponsibility}</ProfileBadge>
             </div>
 
             {isFull ? (
               <div className="mt-6 space-y-4 text-left text-base leading-7 text-slate-700">
-                {founderProfile.fullBiography.map((paragraph) => (
+                {biographyParagraphs.map((paragraph) => (
                   <p key={paragraph}>{paragraph}</p>
                 ))}
               </div>
             ) : (
               <p className="mx-auto mt-6 max-w-3xl text-base leading-7 text-slate-700 lg:mx-0">
-                {founderProfile.shortBiography}
+                {founder.shortBiography}
               </p>
             )}
 
@@ -118,7 +127,7 @@ export function FounderProfileSection({ variant }: FounderProfileSectionProps) {
               <div className="mt-8">
                 <h3 className="text-base font-bold text-slate-950">Technical expertise</h3>
                 <ul className="mt-4 grid gap-3 sm:grid-cols-2">
-                  {founderProfile.expertise.map((item) => (
+                  {founder.expertise.map((item) => (
                     <ExpertiseBadge key={item} label={item} />
                   ))}
                 </ul>

@@ -1,23 +1,25 @@
 import { Menu } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useSiteSettings } from "../../contexts/SiteSettingsContext";
 import { DesktopNavigation } from "./DesktopNavigation";
 import { MobileNavigation } from "./MobileNavigation";
 import { PrimaryButton } from "./PrimaryButton";
 
 export function PublicHeader() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const { settings } = useSiteSettings();
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link
-          aria-label="RRDS Airconditioning Services home"
+          aria-label={`${settings.company.name} home`}
           className="flex items-center gap-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-700 focus:ring-offset-2"
           to="/"
         >
           <img
-            alt="RRDS Airconditioning Services"
+            alt={settings.company.name}
             className="h-12 w-auto max-w-[170px] object-contain sm:h-14 sm:max-w-[220px]"
             src="/rrds-logo-brand.png"
           />

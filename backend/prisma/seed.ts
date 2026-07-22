@@ -50,6 +50,17 @@ async function main() {
     orderBy: { createdAt: "asc" },
   });
 
+  const defaultFounderExpertise = [
+    "Residential Air-Conditioning Systems",
+    "Commercial Air-Conditioning Systems",
+    "Installation and Replacement",
+    "Preventive Maintenance",
+    "Troubleshooting and Diagnostics",
+    "Aircon Repair",
+    "Cleaning and General Maintenance",
+    "Multi-Unit and Hotel Aircon Operations",
+  ];
+
   const companySettingData = {
     companyName: "RRDS Airconditioning Services",
     companyAddress:
@@ -58,6 +69,19 @@ async function main() {
     companyEmail: "oneal101982@gmail.com",
     companyWebsite: "https://www.facebook.com/RRDSAirconServices",
     currencyCode: "PHP",
+    facebookUrl: "https://www.facebook.com/RRDSAirconServices",
+    linkedinUrl: null,
+    founderName: "Ramon Dela Cruz",
+    founderRole: "Founder & Lead Air-Conditioning Technician",
+    founderExperienceYears: "15+",
+    founderShortBiography:
+      "RRDS is led by an experienced air-conditioning technician with more than 15 years of hands-on experience in residential and commercial systems. He currently handles the air-conditioning service and maintenance requirements of Makati Palace Hotel and personally oversees the technical quality of RRDS projects.",
+    founderFullBiography:
+      "With more than 15 years of hands-on experience in the air-conditioning industry, our founder and lead technician has developed extensive knowledge in diagnosing, repairing, maintaining, and installing different types of air-conditioning systems.\n\nHe is experienced in handling window-type, split-type, floor-mounted, cassette, ceiling-mounted, centralized, and commercial air-conditioning units from various major brands.\n\nHe currently oversees and handles the air-conditioning service and maintenance requirements of Makati Palace Hotel, giving him extensive experience in managing both individual units and large-scale commercial air-conditioning operations.\n\nHis hands-on leadership ensures that every RRDS project is approached with proper technical assessment, reliable workmanship, and a strong commitment to customer satisfaction.",
+    founderCurrentResponsibility:
+      "Currently Handling Air-Conditioning Operations at Makati Palace Hotel",
+    founderImagePath: null,
+    founderExpertise: JSON.stringify(defaultFounderExpertise),
     quotationValidityDays: 30,
     estimateValidityDays: 7,
     taxRate: new Prisma.Decimal(0),
@@ -71,10 +95,7 @@ async function main() {
   };
 
   const companySetting = existingCompanySetting
-    ? await prisma.companySetting.update({
-        where: { id: existingCompanySetting.id },
-        data: companySettingData,
-      })
+    ? existingCompanySetting
     : await prisma.companySetting.create({
         data: companySettingData,
       });

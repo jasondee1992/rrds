@@ -8,18 +8,21 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
       ? err.status
       : null;
   const statusCode = err instanceof AppError ? err.statusCode : parserStatus ?? 500;
+  const isMulterError = err?.name === "MulterError";
   const message =
     err instanceof AppError
       ? err.message
+      : isMulterError
+        ? "Invalid image upload."
       : statusCode === 413
         ? "Request body is too large."
         : statusCode === 400
           ? "Invalid request body."
           : "Internal server error";
 
-  if (statusCode >= 500) {
+  if (statusCode >= 500 && !isMulterError) {
     console.error(err);
   }
 
-  res.status(statusCode).json(errorResponse(message));
+  res.status(isMulterError ? 400 : statusCode).json(errorResponse(message));
 };

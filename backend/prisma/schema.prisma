@@ -296,23 +296,33 @@ model AuditLog {
 }
 
 model CompanySetting {
-  id                    String   @id @default(uuid())
-  companyName           String
-  companyAddress        String
-  companyPhone          String
-  companyEmail          String
-  companyWebsite        String?
-  companyLogoPath       String?
-  currencyCode          String   @default("PHP")
-  quotationValidityDays Int      @default(30)
-  estimateValidityDays  Int      @default(7)
-  taxRate               Decimal  @default(0)
-  estimateDisclaimer    String
-  quotationTerms        String
-  quotationFooter       String?
-  registrationDetails   String?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                           String   @id @default(uuid())
+  companyName                  String
+  companyAddress               String
+  companyPhone                 String
+  companyEmail                 String
+  companyWebsite               String?
+  companyLogoPath              String?
+  currencyCode                 String   @default("PHP")
+  facebookUrl                  String?
+  linkedinUrl                  String?
+  founderName                  String?
+  founderRole                  String?
+  founderExperienceYears       String?
+  founderShortBiography        String?
+  founderFullBiography         String?
+  founderCurrentResponsibility String?
+  founderImagePath             String?
+  founderExpertise             String?
+  quotationValidityDays        Int      @default(30)
+  estimateValidityDays         Int      @default(7)
+  taxRate                      Decimal  @default(0)
+  estimateDisclaimer           String
+  quotationTerms               String
+  quotationFooter              String?
+  registrationDetails          String?
+  createdAt                    DateTime @default(now())
+  updatedAt                    DateTime @updatedAt
 
   @@index([companyName])
   @@index([companyEmail])

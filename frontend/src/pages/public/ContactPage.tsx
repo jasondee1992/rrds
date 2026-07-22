@@ -1,4 +1,4 @@
-import { Mail, Send } from "lucide-react";
+import { BriefcaseBusiness, LinkIcon, Mail, MapPin, Phone, Send } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { PrimaryButton } from "../../components/public/PrimaryButton";
 import { SecondaryButton } from "../../components/public/SecondaryButton";
 import { SectionTitle } from "../../components/public/SectionTitle";
-import { contactDetails } from "../../data/publicData";
+import { useSiteSettings } from "../../contexts/SiteSettingsContext";
 import { getSafeApiErrorMessage } from "../../services/apiError";
 import { submitPublicContact } from "../../services/publicContactService";
 
@@ -42,6 +42,7 @@ function FieldError({ message }: { message?: string }) {
 }
 
 export function ContactPage() {
+  const { settings } = useSiteSettings();
   const [referenceNumber, setReferenceNumber] = useState("");
   const [submitError, setSubmitError] = useState("");
   const {
@@ -55,6 +56,41 @@ export function ContactPage() {
   });
 
   const isSubmitted = referenceNumber.length > 0;
+  const contactDetails = [
+    {
+      label: "Phone",
+      value: settings.company.contactNumber,
+      href: `tel:${settings.company.contactNumber.replaceAll(" ", "")}`,
+      Icon: Phone,
+    },
+    {
+      label: "Email",
+      value: settings.company.email,
+      href: `mailto:${settings.company.email}`,
+      Icon: Mail,
+    },
+    { label: "Address", value: settings.company.address, Icon: MapPin },
+    ...(settings.socialLinks.facebook
+      ? [
+          {
+            label: "Facebook",
+            value: "RRDS Aircon Services",
+            href: settings.socialLinks.facebook,
+            Icon: BriefcaseBusiness,
+          },
+        ]
+      : []),
+    ...(settings.socialLinks.linkedin
+      ? [
+          {
+            label: "LinkedIn",
+            value: "RRDS LinkedIn",
+            href: settings.socialLinks.linkedin,
+            Icon: LinkIcon,
+          },
+        ]
+      : []),
+  ];
 
   async function onSubmit(values: ContactFormValues) {
     setSubmitError("");

@@ -1,18 +1,57 @@
 import { Link } from "react-router-dom";
-import { contactDetails, navigationLinks, services } from "../../data/publicData";
+import { BriefcaseBusiness, LinkIcon, Mail, MapPin, Phone } from "lucide-react";
+import { useSiteSettings } from "../../contexts/SiteSettingsContext";
+import { navigationLinks, services } from "../../data/publicData";
 
 export function Footer() {
+  const { settings } = useSiteSettings();
+  const contactDetails = [
+    {
+      label: "Phone",
+      value: settings.company.contactNumber,
+      href: `tel:${settings.company.contactNumber.replaceAll(" ", "")}`,
+      Icon: Phone,
+    },
+    {
+      label: "Email",
+      value: settings.company.email,
+      href: `mailto:${settings.company.email}`,
+      Icon: Mail,
+    },
+    { label: "Address", value: settings.company.address, Icon: MapPin },
+    ...(settings.socialLinks.facebook
+      ? [
+          {
+            label: "Facebook",
+            value: "RRDS Aircon Services",
+            href: settings.socialLinks.facebook,
+            Icon: BriefcaseBusiness,
+          },
+        ]
+      : []),
+    ...(settings.socialLinks.linkedin
+      ? [
+          {
+            label: "LinkedIn",
+            value: "RRDS LinkedIn",
+            href: settings.socialLinks.linkedin,
+            Icon: LinkIcon,
+          },
+        ]
+      : []),
+  ];
+
   return (
     <footer className="bg-slate-950 px-6 py-14 text-white">
       <div className="mx-auto grid max-w-7xl gap-10 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div>
           <Link
-            aria-label="RRDS Airconditioning Services home"
+            aria-label={`${settings.company.name} home`}
             className="inline-flex rounded bg-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:ring-offset-2 focus:ring-offset-slate-950"
             to="/"
           >
             <img
-              alt="RRDS Airconditioning Services"
+              alt={settings.company.name}
               className="h-12 w-auto max-w-[190px] object-contain"
               src="/rrds-logo-brand.png"
             />
@@ -76,7 +115,7 @@ export function Footer() {
         </div>
       </div>
       <div className="mx-auto mt-10 max-w-7xl border-t border-slate-800 pt-6 text-sm text-slate-400">
-        <p>RRDS Airconditioning Services. Public website placeholder content for editing.</p>
+        <p>{settings.company.name}. Public website content managed from admin settings.</p>
       </div>
     </footer>
   );
