@@ -46,6 +46,10 @@ export const quotationListQuerySchema = z.object({
   sort: z.enum(["latest", "oldest"]).optional().default("latest"),
 });
 
+export const quotationPdfModeQuerySchema = z.object({
+  mode: z.enum(["inline", "download"]).optional().default("download"),
+});
+
 export const quotationCustomerSchema = z.object({
   mode: z.enum(["existing", "new"]),
   customerId: z.uuid().optional(),
@@ -104,6 +108,7 @@ export const updateQuotationStatusSchema = z.object({
 });
 
 export type QuotationListQuery = z.infer<typeof quotationListQuerySchema>;
+export type QuotationPdfModeQuery = z.infer<typeof quotationPdfModeQuerySchema>;
 export type CreateQuotationInput = z.infer<typeof createQuotationSchema>;
 export type UpdateQuotationInput = z.infer<typeof updateQuotationSchema>;
 export type UpdateQuotationStatusInput = z.infer<typeof updateQuotationStatusSchema>;

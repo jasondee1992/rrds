@@ -128,3 +128,15 @@ export async function duplicateAdminQuotation(id: string) {
 
   return response.data.data.quotation;
 }
+
+export async function fetchAdminQuotationPdf(
+  id: string,
+  mode: "inline" | "download",
+) {
+  const response = await apiClient.get<Blob>(`/admin/quotations/${id}/pdf`, {
+    params: { mode },
+    responseType: "blob",
+  });
+
+  return response.data;
+}

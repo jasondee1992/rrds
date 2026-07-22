@@ -56,6 +56,8 @@ async function main() {
       "#420 B Senator Neptali A. Gonzales St. Brgy. San Jose Sitio 4, Mandaluyong, Philippines, 1550",
     companyPhone: "0947 476 8214",
     companyEmail: "oneal101982@gmail.com",
+    companyWebsite: "https://www.facebook.com/RRDSAirconServices",
+    currencyCode: "PHP",
     quotationValidityDays: 30,
     estimateValidityDays: 7,
     taxRate: new Prisma.Decimal(0),
@@ -63,6 +65,9 @@ async function main() {
       "Estimated amounts are subject to final inspection, scope validation, and availability of parts or materials.",
     quotationTerms:
       "Approved quotations are subject to payment terms, warranty coverage, and service schedule confirmation.",
+    quotationFooter:
+      "Thank you for considering RRDS Airconditioning Services.",
+    registrationDetails: null,
   };
 
   const companySetting = existingCompanySetting

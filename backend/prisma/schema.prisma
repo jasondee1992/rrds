@@ -301,11 +301,16 @@ model CompanySetting {
   companyAddress        String
   companyPhone          String
   companyEmail          String
+  companyWebsite        String?
+  companyLogoPath       String?
+  currencyCode          String   @default("PHP")
   quotationValidityDays Int      @default(30)
   estimateValidityDays  Int      @default(7)
   taxRate               Decimal  @default(0)
   estimateDisclaimer    String
   quotationTerms        String
+  quotationFooter       String?
+  registrationDetails   String?
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 

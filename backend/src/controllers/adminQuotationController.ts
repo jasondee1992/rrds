@@ -10,11 +10,13 @@ import {
   updateQuotation,
   updateQuotationStatus,
 } from "../services/quotationService";
+import { generateAdminQuotationPdf } from "../services/quotationPdfService";
 import { errorResponse, successResponse } from "../utils/apiResponse";
 import {
   createQuotationSchema,
   quotationIdParamSchema,
   quotationListQuerySchema,
+  quotationPdfModeQuerySchema,
   updateQuotationSchema,
   updateQuotationStatusSchema,
 } from "../validations/quotationSchemas";
@@ -43,6 +45,43 @@ export async function getAdminQuotationDetails(req: Request, res: Response) {
   const quotation = await getQuotationDetails(parsedParams.data.id);
 
   res.json(successResponse("Quotation details retrieved", { quotation }));
+}
+
+export async function getAdminQuotationPdf(req: Request, res: Response) {
+  const parsedParams = quotationIdParamSchema.safeParse(req.params);
+
+  if (!parsedParams.success) {
+    res.status(400).json(errorResponse("Invalid quotation ID."));
+    return;
+  }
+
+  const parsedQuery = quotationPdfModeQuerySchema.safeParse(req.query);
+
+  if (!parsedQuery.success) {
+    res.status(400).json(errorResponse("Invalid PDF mode."));
+    return;
+  }
+
+  if (!req.admin) {
+    res.status(401).json(errorResponse("Unauthorized"));
+    return;
+  }
+
+  const { pdfBuffer, filename } = await generateAdminQuotationPdf(
+    parsedParams.data.id,
+    parsedQuery.data.mode,
+    req.admin,
+  );
+  const disposition = parsedQuery.data.mode === "inline" ? "inline" : "attachment";
+
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", `${disposition}; filename="${filename}"`);
+  res.send(pdfBuffer);
+}
+
+export async function getAdminQuotationPreview(req: Request, res: Response) {
+  req.query.mode = "inline";
+  await getAdminQuotationPdf(req, res);
 }
 
 export async function getAdminQuotationDefaults(_req: Request, res: Response) {

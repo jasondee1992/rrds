@@ -3,6 +3,8 @@ import {
   ArrowLeft,
   ArrowUp,
   Copy,
+  Download,
+  Eye,
   Plus,
   Save,
   Trash2,
@@ -13,6 +15,7 @@ import { getSafeApiErrorMessage } from "../../services/apiError";
 import {
   createAdminQuotation,
   duplicateAdminQuotation,
+  fetchAdminQuotationPdf,
   getAdminQuotationCustomers,
   getAdminQuotationDefaults,
   getAdminQuotationDetails,
@@ -120,6 +123,32 @@ function formatMoney(value: string | number) {
   }).format(Number(value));
 }
 
+function getQuotationPdfFilename(quotation: QuotationDetails) {
+  const safeNumber = quotation.quotationNumber.replace(/[^A-Za-z0-9-]/g, "") || "QTN";
+
+  if (quotation.status === "DRAFT") {
+    return `RRDS-Draft-Quotation-${safeNumber}.pdf`;
+  }
+
+  if (quotation.status === "CANCELLED") {
+    return `RRDS-Cancelled-Quotation-${safeNumber}.pdf`;
+  }
+
+  return `RRDS-Quotation-${safeNumber}.pdf`;
+}
+
+function getPdfStatusBanner(status: QuotationDetails["status"] | undefined) {
+  if (status === "READY") {
+    return "READY — PDF MAY BE PRESENTED TO THE CLIENT";
+  }
+
+  if (status === "CANCELLED") {
+    return "CANCELLED — THIS QUOTATION IS NO LONGER VALID";
+  }
+
+  return "DRAFT — PDF WILL CONTAIN A DRAFT WATERMARK";
+}
+
 function toNumber(value: string) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
@@ -196,6 +225,7 @@ export function AdminQuotationDetailsPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [feedback, setFeedback] = useState("");
   const [isDirty, setIsDirty] = useState(false);
+  const [isPdfLoading, setIsPdfLoading] = useState(false);
 
   const preview = useMemo(() => calculatePreview(form), [form]);
   const isCancelled = quotation?.status === "CANCELLED";
@@ -444,6 +474,45 @@ export function AdminQuotationDetailsPage() {
     }
   }
 
+  async function handlePdf(mode: "inline" | "download") {
+    if (!quotation || !id || isNew) {
+      return;
+    }
+
+    if (isDirty) {
+      setErrorMessage("Save quotation before generating PDF. The PDF uses the last saved version.");
+      return;
+    }
+
+    setIsPdfLoading(true);
+    setFeedback("");
+
+    try {
+      const blob = await fetchAdminQuotationPdf(id, mode);
+      const url = URL.createObjectURL(blob);
+
+      if (mode === "inline") {
+        window.open(url, "_blank", "noopener,noreferrer");
+        window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      } else {
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = getQuotationPdfFilename(quotation);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      setErrorMessage("");
+      setFeedback(mode === "inline" ? "PDF preview opened." : "PDF download started.");
+    } catch (error) {
+      setErrorMessage(getSafeApiErrorMessage(error, "Unable to generate quotation PDF."));
+    } finally {
+      setIsPdfLoading(false);
+    }
+  }
+
   function confirmBack(event: MouseEvent<HTMLAnchorElement>) {
     if (!isDirty) return;
     if (!window.confirm("You have unsaved changes. Leave this quotation?")) {
@@ -510,6 +579,28 @@ export function AdminQuotationDetailsPage() {
               <Save aria-hidden="true" className="h-4 w-4" />
               Save Draft
             </button>
+            {!isNew ? (
+              <>
+                <button
+                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                  disabled={isSaving || isPdfLoading}
+                  onClick={() => void handlePdf("inline")}
+                  type="button"
+                >
+                  <Eye aria-hidden="true" className="h-4 w-4" />
+                  Preview PDF
+                </button>
+                <button
+                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                  disabled={isSaving || isPdfLoading}
+                  onClick={() => void handlePdf("download")}
+                  type="button"
+                >
+                  <Download aria-hidden="true" className="h-4 w-4" />
+                  Download PDF
+                </button>
+              </>
+            ) : null}
             {!isNew && quotation?.status === "DRAFT" ? (
               <button
                 className="rounded-md border border-emerald-600 px-4 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:text-slate-400"
@@ -554,6 +645,20 @@ export function AdminQuotationDetailsPage() {
           </div>
         </div>
       </section>
+
+      {!isNew ? (
+        <section
+          className={`rounded-lg border p-4 text-sm font-bold ${
+            quotation?.status === "READY"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+              : quotation?.status === "CANCELLED"
+                ? "border-red-200 bg-red-50 text-red-800"
+                : "border-amber-200 bg-amber-50 text-amber-900"
+          }`}
+        >
+          {getPdfStatusBanner(quotation?.status)}
+        </section>
+      ) : null}
 
       <section className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
         <div className="space-y-5">

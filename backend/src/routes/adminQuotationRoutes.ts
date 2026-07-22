@@ -3,6 +3,8 @@ import {
   getAdminQuotationCustomers,
   getAdminQuotationDefaults,
   getAdminQuotationDetails,
+  getAdminQuotationPdf,
+  getAdminQuotationPreview,
   getAdminQuotations,
   patchAdminQuotation,
   patchAdminQuotationStatus,
@@ -21,6 +23,8 @@ adminQuotationRoutes.get("/admin/quotations/defaults", getAdminQuotationDefaults
 adminQuotationRoutes.get("/admin/quotations/customers", getAdminQuotationCustomers);
 adminQuotationRoutes.post("/admin/quotations", postAdminQuotation);
 adminQuotationRoutes.get("/admin/quotations", getAdminQuotations);
+adminQuotationRoutes.get("/admin/quotations/:id/pdf", getAdminQuotationPdf);
+adminQuotationRoutes.get("/admin/quotations/:id/preview", getAdminQuotationPreview);
 adminQuotationRoutes.get("/admin/quotations/:id", getAdminQuotationDetails);
 adminQuotationRoutes.patch("/admin/quotations/:id", patchAdminQuotation);
 adminQuotationRoutes.patch("/admin/quotations/:id/status", patchAdminQuotationStatus);
